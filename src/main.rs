@@ -23,7 +23,7 @@ const TOTAL_THREADS: usize = 10;
 
 lazy_static! {
     static ref UNTAGGED_TODO_PATTERN: Regex = Regex::new(r"^(.*)TODO: (.*)").unwrap();
-    static ref COMPLETED_TODO_PATTERN: Regex = Regex::new(r"^(.*)TODO: (.*)").unwrap();
+    static ref COMPLETED_TODO_PATTERN: Regex = Regex::new(r"DONE\(#(\d+)\):").unwrap();
 }
 
 fn insert_new_todos( new_todos: Vec<TODO>) {
@@ -50,10 +50,9 @@ fn match_line(line: &str) -> &str {
     if UNTAGGED_TODO_PATTERN.is_match(line) {
         pattern = "untagged";
     }
-
-    // if COMPLETED_TODO_PATTERN.is_match(line) {
-    //     pattern = "completed";
-    // }
+    if COMPLETED_TODO_PATTERN.is_match(line) {
+        pattern = "completed";
+    }
 
     pattern
 }
@@ -61,7 +60,7 @@ fn match_line(line: &str) -> &str {
 fn process_lines(file: &String, current_todo_count: i64) -> (String, Vec<TODO>) {
     let mut updated_file_data = String::new();
     let mut new_todos: Vec<TODO> = vec![];
-    // let mut completed_todos: Vec<i64>= vec![];
+    let mut completed_todos: Vec<i64>= vec![];
 
     let mut todo_counter = current_todo_count;
 
@@ -69,6 +68,18 @@ fn process_lines(file: &String, current_todo_count: i64) -> (String, Vec<TODO>) 
         match match_line(line) {
             "completed" => {
                 // TODO: add logic for handling completed lines
+                let captured_line = COMPLETED_TODO_PATTERN.captures(line).unwrap();
+
+                const TODO_NUMBER_INDEX: usize = 1;
+
+                let todo_number = captured_line
+                    .get(TODO_NUMBER_INDEX)
+                    .map(
+                        |todo_number| todo_number.as_str().parse::<i64>().unwrap()
+                    )
+                    .unwrap();
+
+                completed_todos.push(todo_number);
             },
             "untagged" => {
                 let structured_todo = 
@@ -128,7 +139,7 @@ fn process_files(filepaths: Vec<String>, current_todo_count: i64) {
             *todo_count += new_todos.len() as i64;
 
             insert_new_todos(new_todos);
-            // delete_complete_todos(complete_todos);
+            // delete_completed_todos(complete_todos);
             update_file(&filepath, updated_file_data);
         };
     
