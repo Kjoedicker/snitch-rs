@@ -3,15 +3,17 @@
 extern crate lazy_static;
 
 use regex::{ Regex };
-use core::time;
 use std::fs::{ write, read_to_string };
 use std::sync::{ Mutex, Arc };
-use std::thread::sleep;
 use std::time::Instant;
 use threadpool::ThreadPool;
 
 mod db;
-use db::{ count_todos, insert_todo };
+use db::{ 
+    count_todos, 
+    insert_todo, 
+    delete_todo 
+};
 
 mod dir;
 use dir::{ aggregrate_files };
@@ -32,11 +34,11 @@ fn insert_new_todos( new_todos: Vec<TODO>) {
     }
 }
 
-// fn delete_complete_todos( new_todos: Vec<TODO>) {
-//     for todo in new_todos {
-//         insert_todo(todo.id, todo.description, todo.todo_line, todo.complete);
-//     }
-// }
+fn delete_completed_todos( completed_todos:Vec<i64>) { 
+    for id in completed_todos {
+        delete_todo(id);
+    }
+}
 
 fn update_file(file: &String, file_data: String) {
     write(file, file_data).unwrap_or_else(|err| {
@@ -57,7 +59,7 @@ fn match_line(line: &str) -> &str {
     pattern
 }
 
-fn process_lines(file: &String, current_todo_count: i64) -> (String, Vec<TODO>) {
+fn process_lines(file: &String, current_todo_count: i64) -> (String, Vec<TODO>, Vec<i64>) {
     let mut updated_file_data = String::new();
     let mut new_todos: Vec<TODO> = vec![];
     let mut completed_todos: Vec<i64>= vec![];
@@ -101,21 +103,22 @@ fn process_lines(file: &String, current_todo_count: i64) -> (String, Vec<TODO>) 
         }
     }
 
-    (updated_file_data, new_todos)
+    (updated_file_data, new_todos, completed_todos)
 }
 
-fn process_file (filepath: &String, current_todo_count: i64) -> (String, Vec<TODO>) {
+fn process_file (filepath: &String, current_todo_count: i64) -> (String, Vec<TODO>, Vec<i64>) {
     let file = read_to_string(&filepath).unwrap();
 
     let (
         updated_file_data, 
         new_todos, 
+        completed_todos
     ) = process_lines(
         &file,
         current_todo_count
     );
 
-    (updated_file_data, new_todos)
+    (updated_file_data, new_todos, completed_todos)
 }
 
 fn process_files(filepaths: Vec<String>, current_todo_count: i64) {
@@ -131,15 +134,20 @@ fn process_files(filepaths: Vec<String>, current_todo_count: i64) {
         let thread_file_processing = move || {
             let mut todo_count = todo_counter.lock().unwrap();
 
-            let (updated_file_data, new_todos) = process_file(&filepath, *todo_count);
+            let (updated_file_data, new_todos, completed_todos) = process_file(&filepath, *todo_count);
 
             let _lock_instance =
                 db_lock.lock().unwrap();
 
             *todo_count += new_todos.len() as i64;
 
-            insert_new_todos(new_todos);
-            // delete_completed_todos(complete_todos);
+            if !new_todos.is_empty() {
+                insert_new_todos(new_todos);
+            }
+            if !completed_todos.is_empty() {
+                delete_completed_todos(completed_todos);
+            }
+
             update_file(&filepath, updated_file_data);
         };
     

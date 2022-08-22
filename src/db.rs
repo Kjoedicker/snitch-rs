@@ -41,6 +41,24 @@ pub fn insert_todo(id: i64, description: String, todo_line: String, complete: i6
     cursor.try_next().unwrap();
 }
 
+pub fn delete_todo(id: i64) {
+    let connection = sqlite::open(DATABASE).unwrap();
+    
+    // TODO: do this with a `for X in (...) syntax`
+    let mut cursor = connection
+        .prepare("
+            delete from todos where id = :id
+        ")
+        .unwrap()
+        .into_cursor() // TODO: this shouldn't require a cursor ?
+        .bind_by_name(vec![
+            (":id", Value::Integer(id)), 
+        ])
+        .unwrap();
+
+    cursor.try_next().unwrap();
+}
+
 pub fn select_todo(id: i64) -> TODO {
     let connection = sqlite::open(DATABASE).unwrap();
 
