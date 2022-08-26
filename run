@@ -56,8 +56,7 @@ my $action_map =  {
 my ( $action ) = @ARGV;
 
 if ( $action ) {
-    my @valid_commands = keys %{$action_map};
-    my $has_valid_action = grep(/$action/, @valid_commands);
+    my $has_valid_action = grep(/$action/, keys %$action_map);
     die "No action to take on $action" unless $has_valid_action;
 }
 
