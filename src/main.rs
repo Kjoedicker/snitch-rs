@@ -16,7 +16,7 @@ use db::{
 };
 
 mod dir;
-use dir::{ aggregrate_files };
+use dir::{ find_project_filepaths };
 
 mod todo;
 use todo::{ TODO, structure_todo };
@@ -85,7 +85,7 @@ fn process_lines(file: &String, current_todo_count: i64) -> (String, Vec<TODO>, 
             },
             "untagged" => {
                 let structured_todo = 
-                structure_todo(String::from(line), todo_counter);
+                    structure_todo(String::from(line), todo_counter);
                 
                 let current_line = format!(
                     "{}\n", structured_todo.todo_line
@@ -170,7 +170,7 @@ fn main() {
     // TODO: should we abstract this out ?
     let now = Instant::now();
 
-    let filepaths = aggregrate_files();
+    let filepaths = find_project_filepaths();
     let current_todo_count = count_todos();
     println!("{current_todo_count}");
 
