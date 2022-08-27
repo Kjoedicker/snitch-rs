@@ -32,6 +32,12 @@ sub create_completed_todos {
     say(`$command`);
 }
 
+sub delete_db {
+    my $command = "rm ./snitch-rs.sqlite";
+
+    say(`$command`);
+}
+
 sub test_flow {
     # Step 1: Compile
     compile_program();
@@ -41,6 +47,8 @@ sub test_flow {
     # Step 3: Test completed todos
     create_completed_todos();
     exec_program();
+    # Step 4: Clean up
+    delete_db();
 }
 
 sub compile_and_run {
