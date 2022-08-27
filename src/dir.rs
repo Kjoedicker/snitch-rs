@@ -4,14 +4,21 @@ pub fn find_project_filepaths() -> Vec<String> {
     // TODO(#0): make this project agnostic
     let file_type = "*.rs";
 
+    // TODO: make this more configurable
+    let exclusion = "./src/*";
+
     // We leverage `find` because thats a lot easier
-    // than trying to reinvent the wheel. We can swallow
-    // the cost a shell call
+    // than trying to reinvent the wheel. 
+    // We can swallow the cost of a shell call
     let output =
         (Command::new("find")
                 .arg(".")
                 .arg("-name")
                 .arg(file_type)
+                .arg("-and")
+                .arg("-not")
+                .arg("-path")
+                .arg(exclusion)
                 .output()
                 .expect("failed to execute process"))
                 .stdout;
