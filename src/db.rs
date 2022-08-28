@@ -1,4 +1,3 @@
-use crate::todo::{ TODO };
 use sqlite::{ Value };
 
 const DATABASE: &str = "snitch-rs.sqlite";
@@ -55,26 +54,6 @@ pub fn delete_todo(id: i64) {
         .unwrap();
 
     cursor.try_next().unwrap();
-}
-
-pub fn select_todo(id: i64) -> TODO {
-    let connection = sqlite::open(DATABASE).unwrap();
-
-    let mut cursor = connection
-        .prepare("select * from todos where id = :id")
-        .unwrap()
-        .into_cursor()
-        .bind_by_name(vec![(":id", Value::Integer(id))])
-        .unwrap();
-
-    let row = cursor.next().unwrap().unwrap();
-
-     TODO {
-        id: row.get::<i64, _>(0),
-        description: row.get::<String, _>(1),
-        todo_line: row.get::<String, _>(2),
-        complete: row.get::<i64, _>(3),
-    }
 }
 
 pub fn count_todos() -> i64 {
