@@ -1,6 +1,4 @@
-#[path = "./todo.rs"] mod todo;
-use todo::{ TODO };
-
+use crate::todo::{ TODO };
 use sqlite::{ Value };
 
 const DATABASE: &str = "snitch-rs.sqlite";
