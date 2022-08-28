@@ -1,7 +1,7 @@
 use crate::{ 
     db::{ init, count_todos, insert_todo, delete_todo }, 
     dir::find_project_filepaths, 
-    todo::{ TODO, structure_todo }, 
+    todo::{ TODO, structure_todo },
     statics::* 
 };
 use std::{
@@ -10,8 +10,6 @@ use std::{
     time::Instant
 };
 use threadpool::ThreadPool;
-
-const TOTAL_THREADS: usize = 10;
 
 fn insert_new_todos( new_todos: Vec<TODO>) {
     for todo in new_todos {
@@ -107,7 +105,7 @@ fn process_file (filepath: &String, current_todo_count: i64) -> (String, Vec<TOD
 
 fn process_files(filepaths: Vec<String>, current_todo_count: i64) {
 
-    let pool = ThreadPool::new(TOTAL_THREADS);
+    let pool = ThreadPool::new(CONFIG.total_threads);
     let todo_counter = Arc::new(Mutex::new(current_todo_count));
     let db_lock = Arc::new(Mutex::new(1));
 

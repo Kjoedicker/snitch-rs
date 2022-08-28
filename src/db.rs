@@ -1,9 +1,9 @@
+use crate::statics::CONFIG;
 use sqlite::{ Value };
 
-const DATABASE_NAME: &str = "snitch-rs.sqlite";
-
 pub fn init() {
-    let connection = sqlite::open(DATABASE_NAME).unwrap();
+    // TODO: find a way to break this redundant connection pattern
+    let connection = sqlite::open(CONFIG.database_name.as_str()).unwrap();
 
     connection
         .execute(
@@ -19,7 +19,7 @@ pub fn init() {
 }
 
 pub fn insert_todo(id: i64, description: String, todo_line: String, complete: i64) {
-    let connection = sqlite::open(DATABASE_NAME).unwrap();
+    let connection = sqlite::open(CONFIG.database_name.as_str()).unwrap();
     
     let mut cursor = connection
         .prepare("
@@ -39,7 +39,7 @@ pub fn insert_todo(id: i64, description: String, todo_line: String, complete: i6
 }
 
 pub fn delete_todo(id: i64) {
-    let connection = sqlite::open(DATABASE_NAME).unwrap();
+    let connection = sqlite::open(CONFIG.database_name.as_str()).unwrap();
     
     // TODO: do this with a `for X in (...) syntax`
     let mut cursor = connection
@@ -57,7 +57,7 @@ pub fn delete_todo(id: i64) {
 }
 
 pub fn count_todos() -> i64 {
-    let connection = sqlite::open(DATABASE_NAME).unwrap();
+    let connection = sqlite::open(CONFIG.database_name.as_str()).unwrap();
 
     let mut cursor = connection
         .prepare("select count(id) from todos")
