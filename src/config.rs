@@ -10,7 +10,7 @@ pub struct Config {
     pub database_name: String,
 
     #[derivative(Default(value = "10"))]
-    pub total_threads: u8,
+    pub total_threads: usize,
 
     #[derivative(Default(value = "String::from(\"TODO\")"))]
     pub prefix: String,
@@ -45,7 +45,7 @@ fn parse_config(config_toml: Table) -> Config {
             base_config.database_name = String::from(value.as_str().unwrap());
         } 
         else if key == "total_threads" {
-            base_config.total_threads = value.as_integer().unwrap() as u8;
+            base_config.total_threads = value.as_integer().unwrap() as usize;
         }
         else if key == "prefix" {
             base_config.prefix = String::from(value.as_str().unwrap());
