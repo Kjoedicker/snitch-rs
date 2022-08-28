@@ -6,10 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+derivative = "2.2.0"
+lazy_static = "1.4.0"
 regex = "1"
-threadpool = "1"
+rand = "0.8"
+sqlite = "0.27.0"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.5.9"
-rand = "0.8"
-lazy_static = "1.4.0"
-sqlite = "0.27.0"
+threadpool = "1"
