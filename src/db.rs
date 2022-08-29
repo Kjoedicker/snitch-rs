@@ -1,5 +1,5 @@
-use crate::statics::CONFIG;
-use sqlite::{ Value };
+use crate::{statics::CONFIG, todo::TODO};
+use sqlite::{ Value, State, Statement };
 
 pub fn init() {
     // TODO: find a way to break this redundant connection pattern
@@ -71,4 +71,32 @@ pub fn count_todos() -> i64 {
 
     count
 }
- 
+
+fn map_rows_to_todos(mut cursor: Statement) -> Vec<TODO> {
+    let mut todos: Vec<TODO> = vec![];
+
+    while let State::Row = cursor.next().unwrap() {
+        let id = cursor.read::<i64>(0).unwrap();
+        let description = cursor.read::<String>(1).unwrap();
+        let todo_line = cursor.read::<String>(2).unwrap();
+        let complete = cursor.read::<i64>(3).unwrap();
+
+        let todo = TODO { id, description, todo_line, complete };
+
+        todos.push(todo);
+    }
+
+    todos
+}
+
+pub fn select_all_todos() -> Vec<TODO> {
+    let connection = sqlite::open(CONFIG.database_name.as_str()).unwrap();
+
+    let cursor = connection
+        .prepare("
+            select * from todos
+        ")
+        .unwrap();
+
+    map_rows_to_todos(cursor)
+}
