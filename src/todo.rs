@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct TODO {
     pub id: i64,
     pub description: String,
