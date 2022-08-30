@@ -12,9 +12,11 @@ sub compile_program {
 }
 
 sub exec_program {
-    my $exec_command = "./target/release/mesh";
+    my $cli_arguments = join(' ', @ARGV);
 
-    say(`$exec_command`);
+    my $exec_command = "./target/release/snitchrs $cli_arguments";
+
+    print(`$exec_command`);
 }
 
 sub create_untagged_todos {
@@ -61,11 +63,7 @@ my $action_map =  {
     default => \&compile_and_run
 };
 
-my ( $action ) = @ARGV;
+my ($action) = @ARGV;
 
-if ( $action ) {
-    my $has_valid_action = grep(/$action/, keys %$action_map);
-    die "No action to take on $action" unless $has_valid_action;
-}
-
-$action_map->{($action || "default" )}()
+my $has_valid_action = grep(/$action/, keys %$action_map);
+$action_map->{($has_valid_action ? $action : "default" )}()
