@@ -1,23 +1,30 @@
+use std::time::Instant;
+
 mod cli;
 mod config;
 mod commands;
-mod db;
 mod dir;
 mod statics;
-mod issue;
+mod trackers;
 
 use cli::*;
 use commands::*;
 
 fn main() {
-    let cli = cli::parse_args();
-
-    match cli.mode {
-        Mode::Peek => {
-            peek()
+        // TODO: should we abstract this out ?
+        let now = Instant::now();
+        
+        let cli = cli::parse_args();
+        
+        match cli.mode {
+            Mode::Peek => {
+                peek()
+            }
+            Mode::Snitch => {
+                snitch()
+            }
         }
-        Mode::Snitch => {
-            snitch()
-        }
-    }
+        
+        let elapsed = now.elapsed();
+        println!("Elapsed: {:.2?}", elapsed);
 }
