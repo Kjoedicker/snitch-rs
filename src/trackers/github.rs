@@ -6,8 +6,9 @@ use serde_json::json;
 
 #[derive(Deserialize, Debug)]
 pub struct Issue {
-    url: String,
-    number: u32,
+    pub html_url: String,
+    pub title: String,
+    pub number: u32,
 }
 
 fn format_query_string(postfix: &str) -> String {
