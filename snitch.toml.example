@@ -1,4 +1,3 @@
 database_name = "snitch-rs.sqlite"
-total_threads = 10
+total_threads = "10"
 prefix = "TODO"
-full_issue = "HEY"
