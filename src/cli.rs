@@ -2,9 +2,9 @@ use clap::{ Parser, Subcommand };
 
 #[derive(Debug, Subcommand)]
 pub enum Mode {
-    /// Find and report untracked todos
+    /// Find and report untracked issues
     Snitch,
-    /// List existing todos
+    /// List existing issues
     Peek,
 }
 

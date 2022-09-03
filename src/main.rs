@@ -4,7 +4,7 @@ mod commands;
 mod db;
 mod dir;
 mod statics;
-mod todo;
+mod issue;
 
 use cli::*;
 use commands::*;
