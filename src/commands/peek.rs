@@ -1,21 +1,21 @@
 use crate::{
-    db::{ select_all_todos },
-    todo::{ TODO }
+    db::{ select_all_issues },
+    issue::{ ISSUE }
 };
 use comfy_table::Table;
 
-fn create_table_from_todos(todos: Vec<TODO>) -> Table {
+fn create_table_from_issues(issues: Vec<ISSUE>) -> Table {
     let mut table = Table::new();
 
     table.set_header(vec!["Id", "Description", "Complete"]);
         
-    for todo in todos {
+    for issue in issues {
         table.add_row(
             format!(
                 "{}|{}|{}", 
-                todo.id, 
-                todo.description, 
-                (if todo.complete == 1 { true } else { false})
+                issue.id, 
+                issue.description, 
+                (if issue.complete == 1 { true } else { false})
             ).split("|")
         );
     }
@@ -24,8 +24,8 @@ fn create_table_from_todos(todos: Vec<TODO>) -> Table {
 }
 
 pub fn peek() {
-    let todos = select_all_todos();
-    let todo_table = create_table_from_todos(todos);
+    let issues = select_all_issues();
+    let issue_table = create_table_from_issues(issues);
 
-    println!("{todo_table}");
+    println!("{issue_table}");
 }

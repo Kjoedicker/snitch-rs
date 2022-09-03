@@ -1,4 +1,4 @@
 /target
-test-todos/*.rs
+test-issues/*.rs
 .vscode
 *.sqlite

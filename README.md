@@ -3,7 +3,7 @@
 <h3 align="center">SnitchRs</h3>
 
   <p align="center">
-    A tool for tracking todos within source code. Inspired <a href="https://github.com/tsoding/snitch#example-1">by</a>
+    A tool for tracking issues within source code. Inspired <a href="https://github.com/tsoding/snitch#example-1">by</a>
     <br />
     <br />
     <br />
