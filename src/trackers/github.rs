@@ -1,5 +1,5 @@
 use crate::{ statics::CONFIG };
-use reqwest::{Error, Client, Response };
+use reqwest::{Error, Client, Response, StatusCode };
 use reqwest::header::{USER_AGENT, AUTHORIZATION};
 use serde::Deserialize;
 use serde_json::json;
@@ -31,6 +31,13 @@ pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
         .header(USER_AGENT, "SnitchRs")
         .send()
         .await?;
+
+    match response.status() {
+        StatusCode::NOT_FOUND => {
+            panic!("Repo was not found");
+        },
+        _ => {}
+    }
 
     let issues: Vec<Issue> = 
         response.json()
