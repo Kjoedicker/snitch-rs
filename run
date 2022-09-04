@@ -60,6 +60,7 @@ sub compile_and_run {
 
 my $action_map =  {
     test => \&test_flow,
+    compile => \&compile_program,
     default => \&compile_and_run
 };
 
