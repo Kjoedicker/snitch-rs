@@ -14,6 +14,10 @@ pub struct Config {
 
     #[derivative(Default(value = "String::from(\"TODO\")"))]
     pub prefix: String,
+
+    pub owner: String,
+    pub repo: String,
+    pub token: String,
 }
 
 fn load_config() -> Option<Table> {
@@ -40,15 +44,16 @@ fn parse_config(config_toml: Table) -> Config {
 
     // TODO: find a more idiomatic solution to populate configuration
     for (key, value) in config_toml {
+        let stringified_value = String::from(value.as_str().unwrap());
 
-        if key == "database_name" {
-            base_config.database_name = String::from(value.as_str().unwrap());
-        } 
-        else if key == "total_threads" {
-            base_config.total_threads = value.as_integer().unwrap() as usize;
-        }
-        else if key == "prefix" {
-            base_config.prefix = String::from(value.as_str().unwrap());
+        match key.as_str() {
+            "database_name" => base_config.database_name = stringified_value,
+            "total_threads" => base_config.total_threads = stringified_value.parse::<usize>().unwrap(),
+            "prefix" => base_config.prefix = stringified_value,
+            "owner" => base_config.owner = stringified_value,
+            "repo" => base_config.repo = stringified_value,
+            "token" => base_config.token = stringified_value,
+            _ => { println!("Couldn't parse: {:?}", key) }
         }
     }
 

@@ -1,0 +1,7 @@
+database_name = "snitch-rs.sqlite"
+total_threads = "10"
+prefix = "TODO"
+owner = "theOwnerOfTheRepo"
+repo = "theNameOfTheRepo"
+token = "bearer <github auth token>"
+

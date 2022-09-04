@@ -1,21 +1,20 @@
 use crate::{
-    db::{ select_all_todos },
-    todo::{ TODO }
+    trackers::github::{ Issue, fetch_issues }
 };
 use comfy_table::Table;
 
-fn create_table_from_todos(todos: Vec<TODO>) -> Table {
+fn create_table_from_issues(issues: Vec<Issue>) -> Table {
     let mut table = Table::new();
 
-    table.set_header(vec!["Id", "Description", "Complete"]);
+    table.set_header(vec!["Id", "Url", "Title"]);
         
-    for todo in todos {
+    for issue in issues {
         table.add_row(
             format!(
                 "{}|{}|{}", 
-                todo.id, 
-                todo.description, 
-                (if todo.complete == 1 { true } else { false})
+                issue.number, 
+                issue.title,
+                issue.html_url
             ).split("|")
         );
     }
@@ -23,9 +22,9 @@ fn create_table_from_todos(todos: Vec<TODO>) -> Table {
     table
 }
 
-pub fn peek() {
-    let todos = select_all_todos();
-    let todo_table = create_table_from_todos(todos);
 
-    println!("{todo_table}");
+pub fn peek() {
+    let issues = fetch_issues().unwrap();
+    let issue_table = create_table_from_issues(issues);
+    println!("{issue_table}");
 }
