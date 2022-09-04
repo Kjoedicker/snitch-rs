@@ -1,18 +1,13 @@
 use crate::{ 
     dir::find_project_filepaths, 
     statics::*,
-    trackers::github::{Issue, fetch_issues, create_issue}
+    trackers::github::{ create_issue }
 };
 use std::{
     fs::{ write, read_to_string }
 };
 use threadpool::ThreadPool;
 
-fn update_file(file: &String, file_data: String) {
-    write(file, file_data).unwrap_or_else(|err| {
-        println!("{file} - Error writing to file: {err}")
-    });
-}
 
 fn match_line(line: &str) -> &str {
     let mut pattern = "";
@@ -33,32 +28,28 @@ fn parse_context_from_line(line: &str) -> (String, String) {
     (prefix, description)
 }
 
-fn process_file(filepath: &str) -> String {
+fn process_file(filepath: &str) {
     let file = read_to_string(filepath).unwrap();
 
-    let mut updated_file_data = String::new();
+    let mut original_lines: Vec<String> = file
+        .split("\n")
+        .map(|x| String::from(x))
+        .collect();
 
-    for line in file.lines() {
-        match match_line(line) {
-            "untagged" => {
-                let (prefix, description) = 
-                    parse_context_from_line(&line);
+    let lines= original_lines.clone();
 
-                let issue = create_issue(&description, "").unwrap();
+    for (line_number, line) in  lines.iter().enumerate(){
+        if match_line(line) == "untagged" {
+            let (prefix, description) = 
+                parse_context_from_line(&line);
 
-                let issue_line = String::from(
-                    format!("{}(#{}):{}\n", prefix, issue.number, description)
-                );
+            let issue = create_issue(&description, "").unwrap();
 
-                updated_file_data.push_str(&issue_line);
-            },
-            _ => {
-                updated_file_data.push_str(&format!("{}\n", line))
-            }
+            original_lines[line_number] = format!("{}(#{}):{}", prefix, issue.number, description);
+            
+            write(filepath, original_lines.join("\n")).unwrap();
         }
     }
-
-    updated_file_data
 }
 
 fn process_files(filepaths: Vec<String>) {
@@ -68,9 +59,7 @@ fn process_files(filepaths: Vec<String>) {
     for filepath in filepaths {
 
         let thread_file_processing = move || {
-            let updated_file_data = process_file(&filepath);
-
-            update_file(&filepath, updated_file_data);
+            process_file(&filepath);
         };
     
         pool.execute(thread_file_processing)
@@ -86,8 +75,6 @@ fn process_files(filepaths: Vec<String>) {
 }
 
 pub fn snitch() {
-
-
     let filepaths = find_project_filepaths();
 
     process_files(filepaths);
