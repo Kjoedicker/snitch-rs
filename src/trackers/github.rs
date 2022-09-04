@@ -29,6 +29,7 @@ pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
     let response = client
         .get(request_url)
         .header(USER_AGENT, "SnitchRs")
+        .header(AUTHORIZATION, &CONFIG.token)
         .send()
         .await?;
 
