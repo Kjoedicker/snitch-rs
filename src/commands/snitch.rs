@@ -1,18 +1,42 @@
 use crate::{ 
     dir::find_project_filepaths, 
     statics::*,
-    trackers::github::{Issue, fetch_issues, create_issue}
+    trackers::github::{ create_issue }
 };
 use std::{
-    fs::{ write, read_to_string }
+    fs::{ write, read_to_string },
+    process::{ Command }
 };
 use threadpool::ThreadPool;
 
-fn update_file(file: &String, file_data: String) {
-    write(file, file_data).unwrap_or_else(|err| {
-        println!("{file} - Error writing to file: {err}")
-    });
+fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
+
+    let concated_issues = format!("#{}", issues.join(", #"));
+
+    let commit_message = format!(
+        "Adding issues: {}", 
+        concated_issues
+    );
+
+    Command::new("git")
+        .arg("commit")
+        .arg("-m")
+        .arg(&commit_message)
+        .arg("--include")
+        .arg(filepath)
+        .output()
+        .expect(
+            &format!(
+                "Failed to commit issue {}, {}`", 
+                concated_issues,
+                filepath 
+            )
+        ).stdout;
+
+    println!("[COMMITED] issues: {}", concated_issues);
+    
 }
+
 
 fn match_line(line: &str) -> &str {
     let mut pattern = "";
@@ -33,32 +57,36 @@ fn parse_context_from_line(line: &str) -> (String, String) {
     (prefix, description)
 }
 
-fn process_file(filepath: &str) -> String {
+fn process_file(filepath: &str) {
     let file = read_to_string(filepath).unwrap();
 
-    let mut updated_file_data = String::new();
+    let mut issues = Vec::new();
 
-    for line in file.lines() {
-        match match_line(line) {
-            "untagged" => {
-                let (prefix, description) = 
-                    parse_context_from_line(&line);
+    let mut original_lines: Vec<String> = file
+        .split("\n")
+        .map(|x| String::from(x))
+        .collect();
 
-                let issue = create_issue(&description, "").unwrap();
+    let lines= original_lines.clone();
 
-                let issue_line = String::from(
-                    format!("{}(#{}):{}\n", prefix, issue.number, description)
-                );
+    for (line_number, line) in  lines.iter().enumerate(){
+        if match_line(line) == "untagged" {
+            let (prefix, description) = 
+                parse_context_from_line(&line);
 
-                updated_file_data.push_str(&issue_line);
-            },
-            _ => {
-                updated_file_data.push_str(&format!("{}\n", line))
-            }
+            let issue = create_issue(&description, "").unwrap();
+
+            original_lines[line_number] = format!("{}(#{}):{}", prefix, &issue.number, description);
+    
+            issues.push(format!("{}", issue.number));
         }
     }
 
-    updated_file_data
+    if issues.len() > 0 {
+        write(filepath, original_lines.join("\n")).unwrap();
+        commit_reported_issues(filepath, issues);
+    }
+
 }
 
 fn process_files(filepaths: Vec<String>) {
@@ -68,9 +96,7 @@ fn process_files(filepaths: Vec<String>) {
     for filepath in filepaths {
 
         let thread_file_processing = move || {
-            let updated_file_data = process_file(&filepath);
-
-            update_file(&filepath, updated_file_data);
+            process_file(&filepath);
         };
     
         pool.execute(thread_file_processing)
@@ -86,8 +112,6 @@ fn process_files(filepaths: Vec<String>) {
 }
 
 pub fn snitch() {
-
-
     let filepaths = find_project_filepaths();
 
     process_files(filepaths);

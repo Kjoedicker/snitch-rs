@@ -3,3 +3,4 @@ test-issues/*.rs
 .vscode
 *.sqlite
 snitch.toml
+snitch-lab
