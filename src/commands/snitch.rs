@@ -11,10 +11,22 @@ use threadpool::ThreadPool;
 
 fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
 
-    let concated_issues = format!("#{}", issues.join(", #"));
+    let base_message = format!(
+        "Adding {}", 
+        match issues.len() > 1 {
+            true => "issues: ",
+            _ => "issue: "
+        }
+    );
+
+    let concated_issues = format!(
+        "#{}", 
+        issues.join(", #")
+    );
 
     let commit_message = format!(
-        "Adding issues: {}", 
+        "{} {}",
+        base_message, 
         concated_issues
     );
 
@@ -84,6 +96,7 @@ fn process_file(filepath: &str) {
 
     if issues.len() > 0 {
         write(filepath, original_lines.join("\n")).unwrap();
+        // Add mutex lock for committing to stop race condition where a commit takes precedence
         commit_reported_issues(filepath, issues);
     }
 
