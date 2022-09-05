@@ -42,7 +42,7 @@ fn load_config() -> Option<Table> {
 fn parse_config(config_toml: Table) -> Config {
     let mut base_config = Config::default();
 
-    // TODO: find a more idiomatic solution to populate configuration
+    // TODO(#149): find a more idiomatic solution to populate configuration
     for (key, value) in config_toml {
         let stringified_value = String::from(value.as_str().unwrap());
 
