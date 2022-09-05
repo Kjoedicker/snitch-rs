@@ -25,7 +25,7 @@ pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
 
     let request_url = format_query_string("issues?per_page=100");
 
-    // TODO: handle 404 situation, or anything that might be less than expected
+    // TODO(#148): handle 404 situation, or anything that might be less than expected
     let response = client
         .get(request_url)
         .header(USER_AGENT, "SnitchRs")
