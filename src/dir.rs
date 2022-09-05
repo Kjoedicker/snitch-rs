@@ -1,10 +1,10 @@
 use std::process::Command;
 
 pub fn find_project_filepaths() -> Vec<String> {
-    // TODO: make the `file_type` more language agnostic and configurable
+    // TODO(#147): make the `file_type` more language agnostic and configurable
     let file_type = "*.rs";
 
-    // TODO: make the exclusion list more configurable
+    // TODO(#151): make the exclusion list more configurable
     let exclusion = "./src/statics.rs";
 
     // We leverage `find` because thats a lot easier
