@@ -5,7 +5,8 @@ use crate::{
 };
 use std::{
     fs::{ write, read_to_string },
-    process::{ Command }
+    process::{ Command },
+    sync::{ Arc, Mutex }
 };
 use threadpool::ThreadPool;
 
@@ -25,7 +26,7 @@ fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
     );
 
     let commit_message = format!(
-        "{} {}",
+        "{}{}",
         base_message, 
         concated_issues
     );
@@ -69,47 +70,54 @@ fn parse_context_from_line(line: &str) -> (String, String) {
     (prefix, description)
 }
 
-fn process_file(filepath: &str) {
+fn process_file(filepath: &str) -> (Vec<String>, Vec<String>) {
     let file = read_to_string(filepath).unwrap();
 
     let mut issues = Vec::new();
 
-    let mut original_lines: Vec<String> = file
+    let mut source_file: Vec<String> = file
         .split("\n")
         .map(|x| String::from(x))
         .collect();
 
-    let lines= original_lines.clone();
+    let file_lines= source_file.clone();
 
-    for (line_number, line) in  lines.iter().enumerate(){
+    for (line_number, line) in  file_lines.iter().enumerate(){
         if match_line(line) == "untagged" {
             let (prefix, description) = 
                 parse_context_from_line(&line);
 
             let issue = create_issue(&description, "").unwrap();
 
-            original_lines[line_number] = format!("{}(#{}):{}", prefix, &issue.number, description);
+            source_file[line_number] = format!("{}(#{}):{}", prefix, &issue.number, description);
     
             issues.push(format!("{}", issue.number));
         }
     }
 
-    if issues.len() > 0 {
-        write(filepath, original_lines.join("\n")).unwrap();
-        // Add mutex lock for committing to stop race condition where a commit takes precedence
-        commit_reported_issues(filepath, issues);
-    }
+    (source_file, issues)
 
 }
 
 fn process_files(filepaths: Vec<String>) {
 
     let pool = ThreadPool::new(CONFIG.total_threads);
+    let commit_action =  Arc::new(Mutex::new(true));
 
     for filepath in filepaths {
+        let power_to_commit = Arc::clone(&commit_action);
 
         let thread_file_processing = move || {
-            process_file(&filepath);
+            let (source_file, issues) = process_file(&filepath);
+
+            if issues.len() > 0 {
+                write(&filepath, source_file.join("\n")).unwrap();
+
+                // This stops a race condition when `commit_reported_issues` 
+                // is called at the same time across threads 
+                let _lock_power_to_commit = power_to_commit.lock().unwrap();
+                commit_reported_issues(&filepath, issues);
+            }
         };
     
         pool.execute(thread_file_processing)
