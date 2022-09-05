@@ -4,9 +4,38 @@ use crate::{
     trackers::github::{ create_issue }
 };
 use std::{
-    fs::{ write, read_to_string }
+    fs::{ write, read_to_string },
+    process::{ Command }
 };
 use threadpool::ThreadPool;
+
+fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
+
+    let concated_issues = format!("#{}", issues.join(", #"));
+
+    let commit_message = format!(
+        "Adding issues: {}", 
+        concated_issues
+    );
+
+    Command::new("git")
+        .arg("commit")
+        .arg("-m")
+        .arg(&commit_message)
+        .arg("--include")
+        .arg(filepath)
+        .output()
+        .expect(
+            &format!(
+                "Failed to commit issue {}, {}`", 
+                concated_issues,
+                filepath 
+            )
+        ).stdout;
+
+    println!("[COMMITED] issues: {}", concated_issues);
+    
+}
 
 
 fn match_line(line: &str) -> &str {
@@ -31,6 +60,8 @@ fn parse_context_from_line(line: &str) -> (String, String) {
 fn process_file(filepath: &str) {
     let file = read_to_string(filepath).unwrap();
 
+    let mut issues = Vec::new();
+
     let mut original_lines: Vec<String> = file
         .split("\n")
         .map(|x| String::from(x))
@@ -45,11 +76,17 @@ fn process_file(filepath: &str) {
 
             let issue = create_issue(&description, "").unwrap();
 
-            original_lines[line_number] = format!("{}(#{}):{}", prefix, issue.number, description);
-            
-            write(filepath, original_lines.join("\n")).unwrap();
+            original_lines[line_number] = format!("{}(#{}):{}", prefix, &issue.number, description);
+    
+            issues.push(format!("{}", issue.number));
         }
     }
+
+    if issues.len() > 0 {
+        write(filepath, original_lines.join("\n")).unwrap();
+        commit_reported_issues(filepath, issues);
+    }
+
 }
 
 fn process_files(filepaths: Vec<String>) {
