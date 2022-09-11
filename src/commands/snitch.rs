@@ -193,15 +193,6 @@ mod snitch_tests {
         assert_eq!(expectation, reality);
     }
 
-    // #[test]
-    // fn test_commit_file() {
-
-    // }
-
-    // #[test]
-    // fn test_commit_reported_issues() {
-
-    // }
 
     #[test]
     fn test_parse_context_from_line() {
@@ -227,10 +218,5 @@ mod snitch_tests {
         let expectation_2 = new_issues.len() == 2;
         assert_eq!(expectation_2, reality);
     }
-
-    // #[test]
-    // fn test_process_filepaths() {
-
-    // }
 
 }
