@@ -48,14 +48,14 @@ pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
 }
 
 #[tokio::main]
-pub async fn create_issue(title: &str, body: &str) -> Result<Issue, Error> {
+pub async fn create_issue(title: &str) -> Result<Issue, Error> {
     let client = Client::new();
 
     let request_url = format_query_string("issues");
 
     let request_body = json!({
         "title": title,
-        "body": body
+        "body": ""
     });
 
     let response = client
