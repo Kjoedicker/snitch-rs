@@ -10,7 +10,17 @@ use std::{
 };
 use threadpool::ThreadPool;
 
-fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
+fn format_issues(issues: Vec<String>) -> String {
+
+    let concated_issues = format!(
+        "#{}", 
+        issues.join(", #")
+    );
+
+    concated_issues
+}
+
+fn format_commit_message(issues: &String) -> String {
 
     let base_message = format!(
         "Adding {}", 
@@ -20,16 +30,16 @@ fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
         }
     );
 
-    let concated_issues = format!(
-        "#{}", 
-        issues.join(", #")
-    );
-
     let commit_message = format!(
         "{}{}",
         base_message, 
-        concated_issues
+        issues
     );
+
+    commit_message
+}
+
+fn commit_file(filepath: &str, commit_message: String) {
 
     Command::new("git")
         .arg("commit")
@@ -40,25 +50,21 @@ fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
         .output()
         .expect(
             &format!(
-                "Failed to commit issue {}, {}`", 
-                concated_issues,
+                "Failed to commit '{}'\n for: {}`", 
+                commit_message,
                 filepath 
             )
         ).stdout;
-
-    println!("[COMMITED] issues: {}", concated_issues);
-    
 }
 
+fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
 
-fn match_line(line: &str) -> &str {
-    let mut pattern = "";
-        
-    if UNTAGGED_ISSUE_PATTERN.is_match(line) {
-        pattern = "untagged";
-    }
+    let formatted_issues = format_issues(issues);
+    let commit_message= format_commit_message(&formatted_issues);
 
-    pattern
+    commit_file(&filepath, commit_message);
+
+    println!("[COMMITED] issues: {}", formatted_issues);
 }
 
 fn parse_context_from_line(line: &str) -> (String, String) {
@@ -70,9 +76,7 @@ fn parse_context_from_line(line: &str) -> (String, String) {
     (prefix, description)
 }
 
-fn process_file(filepath: &str) -> (Vec<String>, Vec<String>) {
-    let file = read_to_string(filepath).unwrap();
-
+fn process_file(file: String) -> (Vec<String>, Vec<String>) {
     let mut issues = Vec::new();
 
     let mut source_file: Vec<String> = file
@@ -80,12 +84,14 @@ fn process_file(filepath: &str) -> (Vec<String>, Vec<String>) {
         .map(|x| String::from(x))
         .collect();
 
-    let file_lines= source_file.clone();
+    for (line_number, line) in source_file.clone().iter().enumerate() {
+    
+        if UNTAGGED_ISSUE_PATTERN.is_match(line) {
 
-    for (line_number, line) in  file_lines.iter().enumerate(){
-        if match_line(line) == "untagged" {
-            let (prefix, description) = 
-                parse_context_from_line(&line);
+            let (
+                prefix,
+                description
+            ) = parse_context_from_line(&line);
 
             let issue = create_issue(&description, "").unwrap();
 
@@ -99,7 +105,7 @@ fn process_file(filepath: &str) -> (Vec<String>, Vec<String>) {
 
 }
 
-fn process_files(filepaths: Vec<String>) {
+fn process_filepaths(filepaths: Vec<String>) {
 
     let pool = ThreadPool::new(CONFIG.total_threads);
     let commit_action =  Arc::new(Mutex::new(true));
@@ -108,7 +114,13 @@ fn process_files(filepaths: Vec<String>) {
         let power_to_commit = Arc::clone(&commit_action);
 
         let thread_file_processing = move || {
-            let (source_file, issues) = process_file(&filepath);
+
+            let file = read_to_string(&filepath).unwrap();
+
+            let (
+                source_file, 
+                issues
+             ) = process_file(file);
 
             if issues.len() > 0 {
                 write(&filepath, source_file.join("\n")).unwrap();
@@ -116,6 +128,7 @@ fn process_files(filepaths: Vec<String>) {
                 // This stops a race condition when `commit_reported_issues` 
                 // is called at the same time across threads 
                 let _lock_power_to_commit = power_to_commit.lock().unwrap();
+    
                 commit_reported_issues(&filepath, issues);
             }
         };
@@ -135,5 +148,5 @@ fn process_files(filepaths: Vec<String>) {
 pub fn snitch() {
     let filepaths = find_project_filepaths();
 
-    process_files(filepaths);
+    process_filepaths(filepaths);
 }
