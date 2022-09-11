@@ -150,3 +150,87 @@ pub fn snitch() {
 
     process_filepaths(filepaths);
 }
+
+#[cfg(test)]
+mod snitch_tests {
+    use super::*;
+
+    fn str_to_string(val: &str) -> String {
+        String::from(val)
+    }
+
+    #[test]
+    fn test_format_issues() {
+        let test_issues: Vec<String> = vec![
+            str_to_string("1"),
+            str_to_string("2"),
+            str_to_string("3")
+        ];
+
+        let formatted_issues = format_issues(test_issues);
+
+        let expectation = true;
+        let reality = formatted_issues == "#1, #2, #3";
+
+        assert_eq!(expectation, reality, "Issues should be formatted properly");
+    }
+
+    #[test]
+    fn test_format_commit_message() {
+        let test_issues: Vec<String> = vec![
+            str_to_string("1"),
+            str_to_string("2"),
+            str_to_string("3")
+        ];
+
+        let formatted_issues = format_issues(test_issues);
+
+        let commit_message = format_commit_message(&formatted_issues);
+
+        let expectation = true;
+        let reality = commit_message == "Adding issues: #1, #2, #3";
+
+        assert_eq!(expectation, reality);
+    }
+
+    // #[test]
+    // fn test_commit_file() {
+
+    // }
+
+    // #[test]
+    // fn test_commit_reported_issues() {
+
+    // }
+
+    #[test]
+    fn test_parse_context_from_line() {
+        let issue_line = "TODO: figure out more convenient macros for testing";
+        
+        let (prefix, description) = parse_context_from_line(issue_line);
+
+        let expectation = true;
+        let reality = format!("{}:{}", prefix, description) == issue_line;
+
+        assert_eq!(expectation, reality);
+    }
+
+    #[test]
+    fn test_process_file() {
+        let file = String::from("line 1\nline 2\nTODO: example todo\nline 4\nTODO: final example todo");
+        let (updated_file, new_issues) = process_file(file);
+
+        let reality= true;
+        let expectation_1 = updated_file.len() == 5;
+        assert_eq!(expectation_1, reality);
+
+        let expectation_2 = new_issues.len() == 2;
+        assert_eq!(expectation_2, reality);
+    }
+
+    // #[test]
+    // fn test_process_filepaths() {
+
+    // }
+
+}
