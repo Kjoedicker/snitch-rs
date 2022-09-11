@@ -22,7 +22,6 @@ fn create_table_from_issues(issues: Vec<Issue>) -> Table {
     table
 }
 
-
 pub fn peek() {
     let issues = fetch_issues().unwrap();
     let issue_table = create_table_from_issues(issues);
