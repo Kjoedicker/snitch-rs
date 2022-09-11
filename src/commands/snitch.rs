@@ -64,7 +64,7 @@ fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
 
     commit_file(&filepath, commit_message);
 
-    println!("[COMMITED] issues: {}", formatted_issues);
+    println!("[COMMITTED] issues: {}", formatted_issues);
 }
 
 fn parse_context_from_line(line: &str) -> (String, String) {
@@ -76,7 +76,7 @@ fn parse_context_from_line(line: &str) -> (String, String) {
     (prefix, description)
 }
 
-fn process_file(file: String) -> (Vec<String>, Vec<String>) {
+fn process_file(file: String) -> (String, Vec<String>) {
     let mut issues = Vec::new();
 
     let mut source_file: Vec<String> = file
@@ -93,7 +93,7 @@ fn process_file(file: String) -> (Vec<String>, Vec<String>) {
                 description
             ) = parse_context_from_line(&line);
 
-            let issue = create_issue(&description, "").unwrap();
+            let issue = create_issue(&description).unwrap();
 
             source_file[line_number] = format!("{}(#{}):{}", prefix, &issue.number, description);
     
@@ -101,7 +101,7 @@ fn process_file(file: String) -> (Vec<String>, Vec<String>) {
         }
     }
 
-    (source_file, issues)
+    (source_file.join("\n"), issues)
 
 }
 
@@ -123,7 +123,7 @@ fn process_filepaths(filepaths: Vec<String>) {
              ) = process_file(file);
 
             if issues.len() > 0 {
-                write(&filepath, source_file.join("\n")).unwrap();
+                write(&filepath, source_file).unwrap();
 
                 // This stops a race condition when `commit_reported_issues` 
                 // is called at the same time across threads 
@@ -218,10 +218,10 @@ mod snitch_tests {
     #[test]
     fn test_process_file() {
         let file = String::from("line 1\nline 2\nTODO: example todo\nline 4\nTODO: final example todo");
-        let (updated_file, new_issues) = process_file(file);
+        let (updated_file, new_issues) = process_file(file.clone());
 
         let reality= true;
-        let expectation_1 = updated_file.len() == 5;
+        let expectation_1 = file.len() < updated_file.len();
         assert_eq!(expectation_1, reality);
 
         let expectation_2 = new_issues.len() == 2;
