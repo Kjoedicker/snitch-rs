@@ -6,9 +6,6 @@ use toml::value::Table;
 #[derive(Derivative, Deserialize, Clone)]
 #[derivative(Debug, Default)]
 pub struct Config {
-    #[derivative(Default(value = "String::from(\"snitch.db\")"))]
-    pub database_name: String,
-
     #[derivative(Default(value = "10"))]
     pub total_threads: usize,
 
@@ -20,10 +17,10 @@ pub struct Config {
     pub token: String,
 }
 
-fn load_config() -> Option<Table> {
+fn load_config(config_path: &str) -> Option<Table> {
     let mut config_toml = String::new();
     
-    let mut file = match File::open("./snitch.toml") {
+    let mut file = match File::open(config_path) {
         Ok(file) => file,
         Err(error) => {
             println!("Error opening config: {:?}", error);
@@ -47,7 +44,6 @@ fn parse_config(config_toml: Table) -> Config {
         let stringified_value = String::from(value.as_str().unwrap());
 
         match key.as_str() {
-            "database_name" => base_config.database_name = stringified_value,
             "total_threads" => base_config.total_threads = stringified_value.parse::<usize>().unwrap(),
             "prefix" => base_config.prefix = stringified_value,
             "owner" => base_config.owner = stringified_value,
@@ -61,7 +57,7 @@ fn parse_config(config_toml: Table) -> Config {
 }
 
 pub fn init() -> Config {
-    let config = match load_config() {
+    let config = match load_config("./snitch.toml") {
         Some(config_toml) => parse_config(config_toml),
         None => Config::default()
     };
