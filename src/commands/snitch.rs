@@ -1,71 +1,14 @@
 use crate::{ 
     dir::find_project_filepaths, 
     statics::*,
-    trackers::github::{ create_issue }
+    trackers::github::{ create_issue },
+    commands::commit
 };
 use std::{
     fs::{ write, read_to_string },
-    process::{ Command },
     sync::{ Arc, Mutex }
 };
 use threadpool::ThreadPool;
-
-fn format_issues(issues: Vec<String>) -> String {
-
-    let concated_issues = format!(
-        "#{}", 
-        issues.join(", #")
-    );
-
-    concated_issues
-}
-
-fn format_commit_message(issues: &String) -> String {
-
-    let base_message = format!(
-        "Adding {}", 
-        match issues.len() > 1 {
-            true => "issues: ",
-            _ => "issue: "
-        }
-    );
-
-    let commit_message = format!(
-        "{}{}",
-        base_message, 
-        issues
-    );
-
-    commit_message
-}
-
-fn commit_file(filepath: &str, commit_message: String) {
-
-    Command::new("git")
-        .arg("commit")
-        .arg("-m")
-        .arg(&commit_message)
-        .arg("--include")
-        .arg(filepath)
-        .output()
-        .expect(
-            &format!(
-                "Failed to commit '{}'\n for: {}`", 
-                commit_message,
-                filepath 
-            )
-        ).stdout;
-}
-
-fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
-
-    let formatted_issues = format_issues(issues);
-    let commit_message= format_commit_message(&formatted_issues);
-
-    commit_file(&filepath, commit_message);
-
-    println!("[COMMITTED] issues: {}", formatted_issues);
-}
 
 fn parse_context_from_line(line: &str) -> (String, String) {
     let lines: Vec<&str> = line.split(':').collect();
@@ -102,7 +45,6 @@ fn process_file(file: String) -> (String, Vec<String>) {
     }
 
     (source_file.join("\n"), issues)
-
 }
 
 fn process_filepaths(filepaths: Vec<String>) {
@@ -129,7 +71,7 @@ fn process_filepaths(filepaths: Vec<String>) {
                 // is called at the same time across threads 
                 let _lock_power_to_commit = power_to_commit.lock().unwrap();
     
-                commit_reported_issues(&filepath, issues);
+                commit::commit_reported_issues(&filepath, issues);
             }
         };
     
@@ -155,45 +97,6 @@ pub fn snitch() {
 mod snitch_tests {
     use super::*;
 
-    fn str_to_string(val: &str) -> String {
-        String::from(val)
-    }
-
-    #[test]
-    fn test_format_issues() {
-        let test_issues: Vec<String> = vec![
-            str_to_string("1"),
-            str_to_string("2"),
-            str_to_string("3")
-        ];
-
-        let formatted_issues = format_issues(test_issues);
-
-        let expectation = true;
-        let reality = formatted_issues == "#1, #2, #3";
-
-        assert_eq!(expectation, reality, "Issues should be formatted properly");
-    }
-
-    #[test]
-    fn test_format_commit_message() {
-        let test_issues: Vec<String> = vec![
-            str_to_string("1"),
-            str_to_string("2"),
-            str_to_string("3")
-        ];
-
-        let formatted_issues = format_issues(test_issues);
-
-        let commit_message = format_commit_message(&formatted_issues);
-
-        let expectation = true;
-        let reality = commit_message == "Adding issues: #1, #2, #3";
-
-        assert_eq!(expectation, reality);
-    }
-
-
     #[test]
     fn test_parse_context_from_line() {
         let issue_line = "TODO: figure out more convenient macros for testing";
@@ -218,5 +121,4 @@ mod snitch_tests {
         let expectation_2 = new_issues.len() == 2;
         assert_eq!(expectation_2, reality);
     }
-
 }
