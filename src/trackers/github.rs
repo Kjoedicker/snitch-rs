@@ -37,7 +37,13 @@ pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
         StatusCode::NOT_FOUND => {
             panic!("Repo was not found");
         },
-        _ => {}
+        StatusCode::UNAUTHORIZED => {
+            panic!("Request unauthorized, check access token");
+        }
+        _ => {
+            // Uncomment for debug
+            println!("fetch_issues(): Recieved error reaching to github API: {:?}", response.status());
+        }
     }
 
     let issues: Vec<Issue> = 
