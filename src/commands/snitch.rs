@@ -38,7 +38,7 @@ fn process_file(file: String) -> (String, Vec<String>) {
 
             let issue = create_issue(&description).unwrap();
 
-            source_file[line_number] = format!("{}(#{}):{}", prefix, &issue.number, description);
+            source_file[line_number] = format!("{}(#{}):{} - {}", prefix, &issue.number, description, &issue.html_url);
     
             issues.push(format!("{}", issue.number));
         }
