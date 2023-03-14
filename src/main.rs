@@ -4,6 +4,7 @@ mod cli;
 mod config;
 mod commands;
 mod dir;
+mod helpers;
 mod statics;
 mod trackers;
 
