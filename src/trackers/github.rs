@@ -1,5 +1,8 @@
-use crate::{ statics::CONFIG };
-use reqwest::{Error, Client, Response, StatusCode };
+use crate::{ 
+    helpers::*,
+    statics::*
+}; 
+use reqwest::{Error, Client, StatusCode };
 use reqwest::header::{USER_AGENT, AUTHORIZATION};
 use serde::Deserialize;
 use serde_json::json;
@@ -11,21 +14,22 @@ pub struct Issue {
     pub number: u32,
 }
 
-fn format_query_string(postfix: &str) -> String {
+fn build_request_url() -> String {
     const BASE_URL: &str = "https://api.github.com/repos";
 
-    let request_url = format!("{BASE_URL}/{}/{}/{}", CONFIG.owner, CONFIG.repo, postfix);
-
-    request_url
+    return format!("{BASE_URL}/{}/{}/issues", CONFIG.owner, CONFIG.repo);
 }
 
 #[tokio::main]
 pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
     let client = Client::new();
 
-    let request_url = format_query_string("issues?per_page=100");
+    let query_string = build_string_query(vec![
+        ("per_page", &CONFIG.issues_per_request)
+    ]);
+    
+    let request_url = format!("{}?{}", build_request_url(), query_string);
 
-    // TODO: handle 404 situation, or anything that might be less than expected
     let response = client
         .get(request_url)
         .header(USER_AGENT, "SnitchRs")
@@ -41,8 +45,7 @@ pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
             panic!("Request unauthorized, check access token");
         }
         _ => {
-            // Uncomment for debug
-            println!("fetch_issues(): Recieved error reaching to github API: {:?}", response.status());
+            println!("fetch_issues(): Received error reaching to github API: {:?}", response.status());
         }
     }
 
@@ -57,7 +60,7 @@ pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
 pub async fn create_issue(title: &str) -> Result<Issue, Error> {
     let client = Client::new();
 
-    let request_url = format_query_string("issues");
+    let request_url = build_request_url();
 
     let request_body = json!({
         "title": title,

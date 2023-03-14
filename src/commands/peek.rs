@@ -13,8 +13,8 @@ fn create_table_from_issues(issues: Vec<Issue>) -> Table {
             format!(
                 "{}|{}|{}", 
                 issue.number, 
+                issue.html_url,
                 issue.title,
-                issue.html_url
             ).split("|")
         );
     }
