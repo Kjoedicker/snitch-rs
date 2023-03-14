@@ -15,6 +15,9 @@ pub struct Config {
     pub owner: String,
     pub repo: String,
     pub token: String,
+
+    #[derivative(Default(value = "String::from(\"10\")"))]
+    pub issues_per_request: String,
 }
 
 fn load_config(config_path: &str) -> Option<Table> {
@@ -49,6 +52,7 @@ fn parse_config(config_toml: Table) -> Config {
             "owner" => base_config.owner = stringified_value,
             "repo" => base_config.repo = stringified_value,
             "token" => base_config.token = stringified_value,
+            "issues_per_request" => base_config.issues_per_request = stringified_value,
             _ => { println!("Couldn't parse: {:?}", key) }
         }
     }
