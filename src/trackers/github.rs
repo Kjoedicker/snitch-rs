@@ -24,7 +24,7 @@ fn build_request_url() -> String {
 pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
     let client = Client::new();
 
-    let query_string = build_string_query(vec![
+    let query_string = build_query_string(vec![
         ("per_page", &CONFIG.issues_per_request)
     ]);
     
