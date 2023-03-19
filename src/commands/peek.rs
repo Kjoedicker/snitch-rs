@@ -15,7 +15,7 @@ fn create_table_from_issues(issues: Vec<Issue>) -> Table {
                 issue.number, 
                 issue.html_url,
                 issue.title,
-            ).split("|")
+            ).split('|')
         );
     }
 

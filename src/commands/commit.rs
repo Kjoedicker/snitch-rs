@@ -40,13 +40,11 @@ fn commit_file(filepath: &str, commit_message: String) {
         .arg("--include")
         .arg(filepath)
         .output()
-        .expect(
-            &format!(
-                "Failed to commit '{}'\n for: {}`", 
-                commit_message,
-                filepath 
-            )
-        ).stdout;
+        .unwrap_or_else(|_| panic!(
+            "Failed to commit '{}'\n for: {}`", 
+            commit_message, 
+            filepath
+        ));
 }
 
 pub fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
@@ -54,7 +52,7 @@ pub fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
     let formatted_issues = format_issues(issues);
     let commit_message= format_commit_message(&formatted_issues);
 
-    commit_file(&filepath, commit_message);
+    commit_file(filepath, commit_message);
 
     println!("[COMMITTED] issues: {}", formatted_issues);
 }

@@ -61,12 +61,10 @@ fn parse_config(config_toml: Table) -> Config {
 }
 
 pub fn init() -> Config {
-    let config = match load_config("./snitch.toml") {
+    match load_config("./snitch.toml") {
         Some(config_toml) => parse_config(config_toml),
         None => Config::default()
-    };
-
-    config
+    }
 }
 
 #[cfg(test)]
