@@ -106,7 +106,7 @@ mod snitch_tests {
         let expectation = true;
         let reality = format!("{}:{}", prefix, description) == issue_line;
 
-        assert_eq!(expectation, reality);
+        assert_eq!(expectation, reality, "The prefix and description rebuilt, should match the original line");
     }
 
     #[test]
@@ -120,5 +120,18 @@ mod snitch_tests {
 
         let expectation_2 = new_issues.len() == 2;
         assert_eq!(expectation_2, reality);
+    }
+
+    #[test]
+    fn test_process_file_empty_file() {
+        let file = String::from("");
+        let (updated_file, new_issues) = process_file(file.clone());
+
+        let reality= true;
+        let expectation_1 = file.len() == updated_file.len();
+        assert_eq!(expectation_1, reality, "The updated file should be exactly the same");
+
+        let expectation_2 = new_issues.len() == 0;
+        assert_eq!(expectation_2, reality, "There should be 0 matched issues");
     }
 }
