@@ -34,13 +34,16 @@ pub fn find_project_filepaths() -> Vec<String> {
     filepaths
 }
 
+#[cfg(test)]
 mod tests {
+    use super::*;
+    use regex::Regex;
+
     mod find_project_filepaths {
-        use regex::Regex;
-        use crate::dir::find_project_filepaths;
+        use super::*;
 
         #[test]
-        fn finds_files () {
+        fn finds () {
             let filepaths = find_project_filepaths();
             
             // TODO: when filetypes and exclusions are fine tuned make this testing more thorough. If possible
@@ -50,7 +53,7 @@ mod tests {
         }
 
         #[test]
-        fn properly_includes () {
+        fn includes () {
             let filepaths = find_project_filepaths();
 
             let expected_file_type = Regex::new("^.*.(rs|RS)$").unwrap();
@@ -61,7 +64,7 @@ mod tests {
         }
 
         #[test]
-        fn properly_excludes () {
+        fn excludes () {
             let filepaths = find_project_filepaths();
 
             let exclusion = "./src/statics.rs";    
