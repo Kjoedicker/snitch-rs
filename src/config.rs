@@ -69,10 +69,12 @@ pub fn init() -> Config {
     config
 }
 
+#[cfg(test)]
 mod tests {
+    use super::*;
 
     mod load_config {
-        use crate::config::{load_config};
+        use super::*;
 
         #[test]
         fn handles_invalid_path () {
@@ -88,10 +90,10 @@ mod tests {
     }
 
     mod parse_config {
-        use crate::config::{load_config, parse_config};
+        use super::*;
 
         #[test]
-        fn properly_maps_config () {
+        fn maps_config () {
             let config = load_config("./snitch.toml").unwrap();
 
             let parsed_config = parse_config(config);

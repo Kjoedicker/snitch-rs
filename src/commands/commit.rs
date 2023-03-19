@@ -60,7 +60,7 @@ pub fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
 }
 
 #[cfg(test)]
-mod commit_tests {
+mod tests {
     use super::*;
 
     fn str_to_string(val: &str) -> String {
@@ -77,29 +77,37 @@ mod commit_tests {
         test_issues
     }
 
-    #[test]
-    fn test_format_issues() {
-        let test_issues = setup();
+    mod format_issues {
+        use super::*;
 
-        let formatted_issues = format_issues(test_issues);
-
-        let expectation = true;
-        let reality = formatted_issues == "#1, #2, #3";
-
-        assert_eq!(expectation, reality, "Issues should be formatted properly");
+        #[test]
+        fn formats_issues() {
+            let test_issues = setup();
+            
+            let formatted_issues = format_issues(test_issues);
+            
+            let expectation = true;
+            let reality = formatted_issues == "#1, #2, #3";
+            
+            assert_eq!(expectation, reality, "Issues should be formatted properly");
+        }
     }
 
-    #[test]
-    fn test_format_commit_message() {
-        let test_issues = setup();
+    mod format_commit_message {
+        use super::*;
+    
+        #[test]
+        fn formats_a_commit_message() {
+            let test_issues = setup();
 
-        let formatted_issues = format_issues(test_issues);
+            let formatted_issues = format_issues(test_issues);
 
-        let commit_message = format_commit_message(&formatted_issues);
+            let commit_message = format_commit_message(&formatted_issues);
 
-        let expectation = true;
-        let reality = commit_message == "Adding issues: #1, #2, #3";
+            let expectation = true;
+            let reality = commit_message == "Adding issues: #1, #2, #3";
 
-        assert_eq!(expectation, reality);
+            assert_eq!(expectation, reality);
+        }
     }
 }

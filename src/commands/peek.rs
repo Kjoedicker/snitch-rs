@@ -28,10 +28,10 @@ pub fn peek() {
     println!("{issue_table}");
 }
 
-mod peek_tests{
-    use crate::trackers::github;
-
+#[cfg(test)]
+mod tests{
     use super::*;
+    use crate::trackers::github;
 
     fn setup() -> Vec<github::Issue> {
         let example_issue_a = Issue {
@@ -59,40 +59,48 @@ mod peek_tests{
         issues
     }
 
-    #[test]
-    fn test_create_table_from_issues() {
-        let issues = peek_tests::setup();
+    mod create_table_from_issues {
+        use super::*;
 
-        let table = create_table_from_issues(issues.clone());
+        #[test]
+        fn maps_each_issue_field_to_the_expected_header() {
+            let issues = setup();
 
-        let headers = vec!["Id", "Url", "Title"];
-    
-        for (row_index, row) in table.row_iter().enumerate() {
-    
-            for (cell_index, cell) in row.cell_iter().enumerate() {
-                let content = cell.content();
+            let table = create_table_from_issues(issues.clone());
 
-                match headers[cell_index] {
-                    "Id" => {
-                        assert_eq!(issues[row_index].number.to_string(), content, "The issue number should match");
-                    },
-                    "Url" => {
-                        assert_eq!(issues[row_index].html_url, content, "The issue URL should match");
-                    }, 
-                    "Title" => {
-                        assert_eq!(issues[row_index].title, content, "The issue title should match");
-                    },
-                    _ => {
-                        assert!(false, "Row content should map to a header");
+            let headers = vec!["Id", "Url", "Title"];
+        
+            for (row_index, row) in table.row_iter().enumerate() {
+        
+                for (cell_index, cell) in row.cell_iter().enumerate() {
+                    let content = cell.content();
+
+                    match headers[cell_index] {
+                        "Id" => {
+                            assert_eq!(issues[row_index].number.to_string(), content, "The issue number should match");
+                        },
+                        "Url" => {
+                            assert_eq!(issues[row_index].html_url, content, "The issue URL should match");
+                        }, 
+                        "Title" => {
+                            assert_eq!(issues[row_index].title, content, "The issue title should match");
+                        },
+                        _ => {
+                            assert!(false, "Row content should map to a header");
+                        }
                     }
                 }
             }
         }
     }
 
-    #[test]
-    fn test_peek() {
-        peek();
+    mod peek {
+        use super::*;
+
+        #[test]
+        fn should_successfully_run() {
+            peek();
+        }
     }
 
 }

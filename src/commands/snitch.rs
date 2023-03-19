@@ -94,44 +94,52 @@ pub fn snitch() {
 }
 
 #[cfg(test)]
-mod snitch_tests {
+mod tests {
     use super::*;
 
-    #[test]
-    fn test_parse_context_from_line() {
-        let issue_line = "TODO: figure out more convenient macros for testing";
-        
-        let (prefix, description) = parse_context_from_line(issue_line);
+    mod parse_context_from_line {
+        use super::*;
 
-        let expectation = true;
-        let reality = format!("{}:{}", prefix, description) == issue_line;
-
-        assert_eq!(expectation, reality, "The prefix and description rebuilt, should match the original line");
+        #[test]
+        fn parses_prefix_and_description() {
+            let issue_line = "TODO: figure out more convenient macros for testing";
+            
+            let (prefix, description) = parse_context_from_line(issue_line);
+            
+            let expectation = true;
+            let reality = format!("{}:{}", prefix, description) == issue_line;
+            
+            assert_eq!(expectation, reality, "The prefix and description rebuilt, should match the original line");
+        }
     }
 
-    #[test]
-    fn test_process_file() {
-        let file = String::from("line 1\nline 2\nTODO: example todo\nline 4\nTODO: final example todo");
-        let (updated_file, new_issues) = process_file(file.clone());
+    mod process_file {
+        use super::*;
 
-        let reality= true;
-        let expectation_1 = file.len() < updated_file.len();
-        assert_eq!(expectation_1, reality);
+        #[test]
+        fn matches_and_updates_issue_lines() {
+            let file = String::from("line 1\nline 2\nTODO: example todo\nline 4\nTODO: final example todo");
+            let (updated_file, new_issues) = process_file(file.clone());
 
-        let expectation_2 = new_issues.len() == 2;
-        assert_eq!(expectation_2, reality);
-    }
+            let reality= true;
+            let expectation_1 = file.len() < updated_file.len();
+            assert_eq!(expectation_1, reality);
 
-    #[test]
-    fn test_process_file_empty_file() {
-        let file = String::from("");
-        let (updated_file, new_issues) = process_file(file.clone());
+            let expectation_2 = new_issues.len() == 2;
+            assert_eq!(expectation_2, reality);
+        }
 
-        let reality= true;
-        let expectation_1 = file.len() == updated_file.len();
-        assert_eq!(expectation_1, reality, "The updated file should be exactly the same");
+        #[test]
+        fn handles_empty_files_gracefully() {
+            let file = String::from("");
+            let (updated_file, new_issues) = process_file(file.clone());
 
-        let expectation_2 = new_issues.len() == 0;
-        assert_eq!(expectation_2, reality, "There should be 0 matched issues");
+            let reality= true;
+            let expectation_1 = file.len() == updated_file.len();
+            assert_eq!(expectation_1, reality, "The updated file should be exactly the same");
+
+            let expectation_2 = new_issues.len() == 0;
+            assert_eq!(expectation_2, reality, "There should be 0 matched issues");
+        }
     }
 }
