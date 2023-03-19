@@ -34,12 +34,44 @@ pub fn find_project_filepaths() -> Vec<String> {
     filepaths
 }
 
-#[test]
-fn test_find_project_filepaths () {
-    let filepaths = find_project_filepaths();
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use regex::Regex;
 
-    // TODO: when filetypes and exclusions are fine tuned make this testing more thorough. If possible
-    let minimum_number_of_rust_files = 10;
-    
-    assert_eq!(filepaths.len() >= minimum_number_of_rust_files, true, "find_project_files should return a list of files");
+    mod find_project_filepaths {
+        use super::*;
+
+        #[test]
+        fn finds () {
+            let filepaths = find_project_filepaths();
+            
+            // TODO: when filetypes and exclusions are fine tuned make this testing more thorough. If possible
+            let minimum_number_of_rust_files = 10;
+            
+            assert_eq!(filepaths.len() >= minimum_number_of_rust_files, true, "find_project_files should return a list of files");
+        }
+
+        #[test]
+        fn includes () {
+            let filepaths = find_project_filepaths();
+
+            let expected_file_type = Regex::new("^.*.(rs|RS)$").unwrap();
+            
+            filepaths.into_iter().for_each(|filepath| {
+               assert!(expected_file_type.is_match(&filepath), "Should have matched the expected file type");  
+            });
+        }
+
+        #[test]
+        fn excludes () {
+            let filepaths = find_project_filepaths();
+
+            let exclusion = "./src/statics.rs";    
+            
+            filepaths.into_iter().for_each(|filepath| {
+               assert_ne!(filepath, exclusion, "Should have excluded {exclusion}");
+            });
+        }
+    }
 }

@@ -69,33 +69,47 @@ pub fn init() -> Config {
     config
 }
 
-#[test]
-fn test_invalid_path() {
-    let config = load_config("1");
-    assert_eq!(config, None, "load_config should return `None` for invalid paths");
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_valid_path() {
-    let config = load_config("./snitch.toml");
-    assert_eq!(config.is_some(), true, "load_config should return `Some` for valid paths");
-}
+    mod load_config {
+        use super::*;
 
-#[test]
-fn test_parsed_config() {
-    let config = load_config("./snitch.toml").unwrap();
+        #[test]
+        fn handles_invalid_path () {
+            let config = load_config("1");
+            assert_eq!(config, None, "load_config should return `None` for invalid paths");
+        }
 
-    let parsed_config = parse_config(config);
+        #[test]
+        fn handles_valid_path () {
+            let config = load_config("./snitch.toml");
+            assert_eq!(config.is_some(), true, "load_config should return `Some` for valid paths");
+        }
+    }
 
-    let expected_conditions = &[
-        (parsed_config.owner.is_empty(), false, "owner"),
-        (parsed_config.repo.is_empty(), false, "repo"),
-        (parsed_config.token.is_empty(), false, "token"),
-        (parsed_config.prefix.is_empty(), false, "prefix"),
-        ((parsed_config.total_threads == 0), false, "total_threads"),
-    ];
+    mod parse_config {
+        use super::*;
 
-    for (reality, expectation, desc) in expected_conditions {
-        assert_eq!(reality, expectation, "{}", desc);
+        #[test]
+        fn maps_config () {
+            let config = load_config("./snitch.toml").unwrap();
+
+            let parsed_config = parse_config(config);
+
+            let expected_conditions = &[
+                (parsed_config.owner.is_empty(), false, "owner"),
+                (parsed_config.repo.is_empty(), false, "repo"),
+                (parsed_config.token.is_empty(), false, "token"),
+                (parsed_config.prefix.is_empty(), false, "prefix"),
+                ((parsed_config.total_threads == 0), false, "total_threads"),
+            ];
+
+            for (reality, expectation, desc) in expected_conditions {
+                assert_eq!(reality, expectation, "{}", desc);
+            }
+        }
     }
 }
+

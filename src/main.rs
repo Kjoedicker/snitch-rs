@@ -12,20 +12,20 @@ use cli::*;
 use commands::*;
 
 fn main() {
-        // TODO: should we abstract this out ?
-        let now = Instant::now();
-        
-        let cli = cli::parse_args();
-        
-        match cli.mode {
-            Mode::Peek => {
-                peek()
-            }
-            Mode::Snitch => {
-                snitch()
-            }
+    // TODO: should we abstract this out ?
+    let now = Instant::now();
+    
+    let cli = cli::parse_args();
+    
+    match cli.mode {
+        Mode::Peek => {
+            peek()
         }
-        
-        let elapsed = now.elapsed();
-        println!("Elapsed: {:.2?}", elapsed);
+        Mode::Snitch => {
+            snitch()
+        }
+    }
+    
+    let elapsed = now.elapsed();
+    println!("Elapsed: {:.2?}", elapsed);
 }

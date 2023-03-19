@@ -7,7 +7,7 @@ use reqwest::header::{USER_AGENT, AUTHORIZATION};
 use serde::Deserialize;
 use serde_json::json;
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct Issue {
     pub html_url: String,
     pub title: String,
@@ -24,7 +24,7 @@ fn build_request_url() -> String {
 pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
     let client = Client::new();
 
-    let query_string = build_string_query(vec![
+    let query_string = build_query_string(vec![
         ("per_page", &CONFIG.issues_per_request)
     ]);
     
@@ -38,6 +38,7 @@ pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
         .await?;
 
     match response.status() {
+        StatusCode::OK => {},
         StatusCode::NOT_FOUND => {
             panic!("Repo was not found");
         },
@@ -45,7 +46,7 @@ pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
             panic!("Request unauthorized, check access token");
         }
         _ => {
-            println!("fetch_issues(): Received error reaching to github API: {:?}", response.status());
+            panic!("fetch_issues(): Received error reaching out to github API: {:?}", response.status());
         }
     }
 
