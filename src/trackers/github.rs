@@ -17,7 +17,7 @@ pub struct Issue {
 fn build_request_url() -> String {
     const BASE_URL: &str = "https://api.github.com/repos";
 
-    return format!("{BASE_URL}/{}/{}/issues", CONFIG.owner, CONFIG.repo);
+    format!("{BASE_URL}/{}/{}/issues", CONFIG.owner, CONFIG.repo)
 }
 
 #[tokio::main]

@@ -26,8 +26,8 @@ pub fn find_project_filepaths() -> Vec<String> {
     let stringified_output = String::from_utf8(output).unwrap();
 
     let filepaths: Vec<String> = stringified_output
-        .split("\n")
-        .filter(|x| x.len() != 0)
+        .split('\n')
+        .filter(|x| !x.is_empty())
         .map(|x| x.to_string())
         .collect();
     
