@@ -67,13 +67,19 @@ mod commit_tests {
         String::from(val)
     }
 
-    #[test]
-    fn test_format_issues() {
+    fn setup () -> Vec<String> {
         let test_issues: Vec<String> = vec![
             str_to_string("1"),
             str_to_string("2"),
             str_to_string("3")
         ];
+
+        test_issues
+    }
+
+    #[test]
+    fn test_format_issues() {
+        let test_issues = setup();
 
         let formatted_issues = format_issues(test_issues);
 
@@ -85,11 +91,7 @@ mod commit_tests {
 
     #[test]
     fn test_format_commit_message() {
-        let test_issues: Vec<String> = vec![
-            str_to_string("1"),
-            str_to_string("2"),
-            str_to_string("3")
-        ];
+        let test_issues = setup();
 
         let formatted_issues = format_issues(test_issues);
 
