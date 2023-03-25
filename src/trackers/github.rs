@@ -90,3 +90,62 @@ pub async fn create_issue(title: &str, url: Option<String>) -> Issue {
 
     issue
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod fetch_issues {
+        use wiremock::{MockServer, Mock, ResponseTemplate};
+        use wiremock::matchers::{method, path};
+        use super::*;
+
+        #[tokio::test]
+        #[should_panic(expected = "Repo not found")]
+        async fn should_handle_404 (){
+            let mock_server = MockServer::start().await;
+
+            let url_path = format!("/repos/{}/{}/issues", CONFIG.owner, CONFIG.repo);
+
+            Mock::given(method("GET"))
+            .and(path(url_path))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&mock_server)
+            .await;
+
+            let _ = fetch_issues(Some(mock_server.uri())).await;
+        }
+    
+        #[tokio::test]
+        #[should_panic(expected = "Request unauthorized, check access token")]
+        async fn should_handle_401 (){
+            let mock_server = MockServer::start().await;
+
+            let url_path = format!("/repos/{}/{}/issues", CONFIG.owner, CONFIG.repo);
+
+            Mock::given(method("GET"))
+            .and(path(url_path))
+            .respond_with(ResponseTemplate::new(401))
+            .mount(&mock_server)
+            .await;
+
+            let _ = fetch_issues(Some(mock_server.uri())).await;
+        }
+
+        #[tokio::test]
+        #[should_panic(expected = "Received error reaching out to github API: 451")]
+        async fn should_handle_unexpected_error (){
+            let mock_server = MockServer::start().await;
+
+            let url_path = format!("/repos/{}/{}/issues", CONFIG.owner, CONFIG.repo);
+
+            Mock::given(method("GET"))
+            .and(path(url_path))
+            .respond_with(ResponseTemplate::new(451))
+            .mount(&mock_server)
+            .await;
+
+            let _ = fetch_issues(Some(mock_server.uri())).await;
+        }
+    }
+}
