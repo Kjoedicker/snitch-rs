@@ -2,7 +2,7 @@ use crate::{
     helpers::*,
     statics::*
 }; 
-use reqwest::{Error, Client, StatusCode };
+use reqwest::{Client, StatusCode };
 use reqwest::header::{USER_AGENT, AUTHORIZATION};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -54,7 +54,7 @@ pub async fn fetch_issues(url: Option<String>) -> Vec<Issue> {
         Ok(issues) => issues,
         Err(err) => panic!("Problem marshaling response data into issue type, {:?}", err)
     };
-    
+
     issues
 }
 
@@ -142,6 +142,59 @@ mod tests {
             Mock::given(method("GET"))
             .and(path(url_path))
             .respond_with(ResponseTemplate::new(451))
+            .mount(&mock_server)
+            .await;
+
+            let _ = fetch_issues(Some(mock_server.uri())).await;
+        }
+
+        #[tokio::test]
+        async fn should_handle_valid_response (){
+
+            let json_body = serde_json::json!([{
+                "html_url": "https://github.com/Kjoedicker/snitch-lab/issues/650",
+                "number": 650,
+                "title": " some thing",
+              },
+              {
+                "html_url": "https://github.com/Kjoedicker/snitch-lab/issues/650",
+                "number": 650,
+                "title": " some thing",
+              },
+            ]);
+    
+            let mock_server = MockServer::start().await;
+
+            let url_path = format!("/repos/{}/{}/issues", CONFIG.owner, CONFIG.repo);
+        
+            Mock::given(method("GET"))
+            .and(path(url_path))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json_body))
+            .mount(&mock_server)
+            .await;
+
+            let issues = fetch_issues(Some(mock_server.uri())).await;
+
+            assert_eq!(issues.len(), 2, "There should be a total of two issues");
+
+            assert_eq!(issues[0].html_url, "https://github.com/Kjoedicker/snitch-lab/issues/650");
+            assert_eq!(issues[0].number, 650);
+            assert_eq!(issues[0].title, " some thing");
+        }
+
+        #[tokio::test]
+        #[should_panic(expected = "Problem marshaling response data into issue type, reqwest::Error { kind: Decode")]
+        async fn should_handle_invalid_response (){
+
+            let json_body = serde_json::json!([{}]);
+    
+            let mock_server = MockServer::start().await;
+
+            let url_path = format!("/repos/{}/{}/issues", CONFIG.owner, CONFIG.repo);
+        
+            Mock::given(method("GET"))
+            .and(path(url_path))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json_body))
             .mount(&mock_server)
             .await;
 
