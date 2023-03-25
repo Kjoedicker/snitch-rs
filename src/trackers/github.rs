@@ -4,64 +4,65 @@ use crate::{
 }; 
 use reqwest::{Error, Client, StatusCode };
 use reqwest::header::{USER_AGENT, AUTHORIZATION};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-#[derive(Clone, Deserialize, Debug)]
+const GITHUB_URL: &str = "https://api.github.com";
+
+#[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct Issue {
     pub html_url: String,
     pub title: String,
     pub number: u32,
 }
 
-fn build_request_url() -> String {
-    const BASE_URL: &str = "https://api.github.com/repos";
-
-    format!("{BASE_URL}/{}/{}/issues", CONFIG.owner, CONFIG.repo)
+fn build_request_url(base_url: String) -> String {
+    format!("{base_url}/repos/{}/{}/issues", CONFIG.owner, CONFIG.repo)
 }
 
-#[tokio::main]
-pub async fn fetch_issues() -> Result<Vec<Issue>, Error> {
+pub async fn fetch_issues(url: Option<String>) -> Vec<Issue> {
     let client = Client::new();
-
+    
     let query_string = build_query_string(vec![
         ("per_page", &CONFIG.issues_per_request)
     ]);
-    
-    let request_url = format!("{}?{}", build_request_url(), query_string);
+
+    let request_url = format!("{}?{}", build_request_url(url.unwrap_or(GITHUB_URL.to_string())), query_string);
 
     let response = client
         .get(request_url)
         .header(USER_AGENT, "SnitchRs")
         .header(AUTHORIZATION, &CONFIG.token)
         .send()
-        .await?;
+        .await
+        .unwrap();
 
     match response.status() {
         StatusCode::OK => {},
         StatusCode::NOT_FOUND => {
-            panic!("Repo was not found");
+            panic!("Repo not found, check configuration");
         },
         StatusCode::UNAUTHORIZED => {
             panic!("Request unauthorized, check access token");
         }
-        _ => {
-            panic!("fetch_issues(): Received error reaching out to github API: {:?}", response.status());
+        status_code => {
+            panic!("Received error reaching out to github API: {:?}", status_code);
         }
     }
 
-    let issues: Vec<Issue> = 
-        response.json()
-        .await?;
-
-    Ok(issues)
+    let issues: Vec<Issue> = match response.json().await {
+        Ok(issues) => issues,
+        Err(err) => panic!("Problem marshaling response data into issue type, {:?}", err)
+    };
+    
+    issues
 }
 
 #[tokio::main]
-pub async fn create_issue(title: &str) -> Result<Issue, Error> {
+pub async fn create_issue(title: &str, url: Option<String>) -> Issue {
     let client = Client::new();
 
-    let request_url = build_request_url();
+    let request_url = build_request_url(url.unwrap_or(GITHUB_URL.to_string()));
 
     let request_body = json!({
         "title": title,
@@ -74,11 +75,18 @@ pub async fn create_issue(title: &str) -> Result<Issue, Error> {
         .header(AUTHORIZATION, &CONFIG.token)
         .json(&request_body)
         .send()
-        .await?;
+        .await
+        .unwrap();
 
-    let issue: Issue = 
-        response.json()
-        .await?;
+    match response.status() {
+        StatusCode::CREATED => {},
+        status_code => panic!("Received error reaching out to github API: {:?}", status_code)
+    };
 
-    Ok(issue)
+    let issue: Issue = match response.json().await {
+        Ok(issue) => issue,
+        Err(err) => panic!("Problem marshaling response data into issue type, {:?}", err)
+    };
+
+    issue
 }
