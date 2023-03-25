@@ -36,7 +36,7 @@ fn process_file(file: String) -> (String, Vec<String>) {
                 description
             ) = parse_context_from_line(line);
 
-            let issue = create_issue(&description).unwrap();
+            let issue = create_issue(&description, None);
 
             source_file[line_number] = format!("{}(#{}):{} - {}", prefix, &issue.number, description, &issue.html_url);
     
@@ -64,7 +64,7 @@ fn queue_files_for_processing(filepaths: Vec<String>) {
                 issues
              ) = process_file(file);
 
-            if !issues.is_empty() { return };
+            if issues.is_empty() { return };
 
             write(&filepath, source_file).unwrap();
 
