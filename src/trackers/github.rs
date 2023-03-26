@@ -94,10 +94,11 @@ pub async fn create_issue(title: &str, url: Option<String>) -> Issue {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wiremock::{MockServer, Mock, ResponseTemplate};
+    use wiremock::matchers::{method, path};
 
     mod fetch_issues {
-        use wiremock::{MockServer, Mock, ResponseTemplate};
-        use wiremock::matchers::{method, path};
+
         use super::*;
 
         #[tokio::test]
@@ -199,6 +200,56 @@ mod tests {
             .await;
 
             let _ = fetch_issues(Some(mock_server.uri())).await;
+        }
+    }
+
+    mod create_issue {
+        use super::*;
+
+        #[tokio::test]
+        async fn should_handle_valid_response (){
+
+            let json_body = serde_json::json!({
+                "html_url": "https://github.com/Kjoedicker/snitch-lab/issues/650",
+                "number": 650,
+                "title": " some thing",
+              }
+            );
+    
+            let mock_server = MockServer::start().await;
+
+            let url_path = format!("/repos/{}/{}/issues", CONFIG.owner, CONFIG.repo);
+        
+            Mock::given(method("POST"))
+            .and(path(url_path))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json_body))
+            .mount(&mock_server)
+            .await;
+
+            let issue = create_issue("test-title", Some(mock_server.uri())).await;
+        
+            assert_eq!(issue.html_url, "https://github.com/Kjoedicker/snitch-lab/issues/650");
+            assert_eq!(issue.number, 650);
+            assert_eq!(issue.title, " some thing");
+        }
+
+        #[tokio::test]
+        #[should_panic(expected = "Problem marshaling response data into issue type, reqwest::Error { kind: Decode")]
+        async fn should_handle_invalid_response (){
+
+            let json_body = serde_json::json!({});
+    
+            let mock_server = MockServer::start().await;
+
+            let url_path = format!("/repos/{}/{}/issues", CONFIG.owner, CONFIG.repo);
+        
+            Mock::given(method("POST"))
+            .and(path(url_path))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json_body))
+            .mount(&mock_server)
+            .await;
+
+            let _ = create_issue("test-title", Some(mock_server.uri())).await;
         }
     }
 }
