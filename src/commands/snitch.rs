@@ -19,12 +19,13 @@ fn parse_context_from_line(line: &str) -> (String, String) {
     (prefix, description)
 }
 
-fn process_file(file: String) -> (String, Vec<String>) {
+#[tokio::main]
+async fn process_file(file: String) -> (String, Vec<String>) {
     let mut issues = Vec::new();
 
     let mut source_file: Vec<String> = file
-        .split("\n")
-        .map(|x| String::from(x))
+        .split('\n')
+        .map(String::from)
         .collect();
 
     for (line_number, line) in source_file.clone().iter().enumerate() {
@@ -34,9 +35,9 @@ fn process_file(file: String) -> (String, Vec<String>) {
             let (
                 prefix,
                 description
-            ) = parse_context_from_line(&line);
+            ) = parse_context_from_line(line);
 
-            let issue = create_issue(&description).unwrap();
+            let issue = create_issue(&description, None).await;
 
             source_file[line_number] = format!("{}(#{}):{} - {}", prefix, &issue.number, description, &issue.html_url);
     
@@ -47,7 +48,7 @@ fn process_file(file: String) -> (String, Vec<String>) {
     (source_file.join("\n"), issues)
 }
 
-fn process_filepaths(filepaths: Vec<String>) {
+fn queue_files_for_processing(filepaths: Vec<String>) {
 
     let pool = ThreadPool::new(CONFIG.total_threads);
     let commit_action =  Arc::new(Mutex::new(true));
@@ -64,15 +65,15 @@ fn process_filepaths(filepaths: Vec<String>) {
                 issues
              ) = process_file(file);
 
-            if issues.len() > 0 {
-                write(&filepath, source_file).unwrap();
+            if issues.is_empty() { return };
 
-                // This stops a race condition when `commit_reported_issues` 
-                // is called at the same time across threads 
-                let _lock_power_to_commit = power_to_commit.lock().unwrap();
-    
-                commit::commit_reported_issues(&filepath, issues);
-            }
+            write(&filepath, source_file).unwrap();
+
+            // This stops a race condition when `commit_reported_issues` 
+            // is called at the same time across threads 
+            let _lock_power_to_commit = power_to_commit.lock().unwrap();
+
+            commit::commit_reported_issues(&filepath, issues);
         };
     
         pool.execute(thread_file_processing)
@@ -90,7 +91,7 @@ fn process_filepaths(filepaths: Vec<String>) {
 pub fn snitch() {
     let filepaths = find_project_filepaths();
 
-    process_filepaths(filepaths);
+    queue_files_for_processing(filepaths);
 }
 
 #[cfg(test)]

@@ -11,7 +11,8 @@ mod trackers;
 use cli::*;
 use commands::*;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // TODO: should we abstract this out ?
     let now = Instant::now();
     
@@ -19,7 +20,7 @@ fn main() {
     
     match cli.mode {
         Mode::Peek => {
-            peek()
+            peek().await;
         }
         Mode::Snitch => {
             snitch()

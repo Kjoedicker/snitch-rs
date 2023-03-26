@@ -15,15 +15,15 @@ fn create_table_from_issues(issues: Vec<Issue>) -> Table {
                 issue.number, 
                 issue.html_url,
                 issue.title,
-            ).split("|")
+            ).split('|')
         );
     }
 
     table
 }
 
-pub fn peek() {
-    let issues = fetch_issues().unwrap();
+pub async fn peek() {
+    let issues = fetch_issues(None).await;
     let issue_table = create_table_from_issues(issues);
     println!("{issue_table}");
 }
@@ -97,9 +97,9 @@ mod tests{
     mod peek {
         use super::*;
 
-        #[test]
-        fn should_successfully_run() {
-            peek();
+        #[tokio::test]
+        async fn should_successfully_run() {
+            peek().await;
         }
     }
 

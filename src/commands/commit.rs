@@ -1,3 +1,4 @@
+use core::panic;
 use std::{
     process::{ Command },
 };
@@ -31,31 +32,55 @@ pub fn format_commit_message(issues: &String) -> String {
     commit_message
 }
 
-fn commit_file(filepath: &str, commit_message: String) {
+fn stage_file(filepath: &str){
 
-    Command::new("git")
+    let result = Command::new("git")
+        .arg("add")
+        .arg(filepath)
+        .output();
+
+    let output = match result {
+        Ok(option) => { option },
+        Err(err) => {panic!("Error staging file {filepath}\nContext: {:?}", err)}
+    };
+
+    match output.status.success() {
+        true => {},
+        false => {
+            panic!("Error staging file {filepath}\nContext: {:?}", output)
+        }
+    }
+ }
+
+fn commit_staged(filepath: &str, commit_message: String){
+
+    let result = Command::new("git")
         .arg("commit")
         .arg("-m")
         .arg(&commit_message)
-        .arg("--include")
-        .arg(filepath)
-        .output()
-        .expect(
-            &format!(
-                "Failed to commit '{}'\n for: {}`", 
-                commit_message,
-                filepath 
-            )
-        ).stdout;
-}
+        .output();
+
+    let output = match result {
+        Ok(option) => { option },
+        Err(err) => {panic!("Error committing file {filepath}\nContext: {:?}", err)}
+    };
+
+    match output.status.success() {
+        true => {},
+        false => {
+            panic!("Error committing file {filepath}\nContext: {:?}", output)
+        }
+    }
+ }
 
 pub fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
 
     let formatted_issues = format_issues(issues);
     let commit_message= format_commit_message(&formatted_issues);
-
-    commit_file(&filepath, commit_message);
-
+    
+    stage_file(filepath);
+    commit_staged(filepath, commit_message);
+    
     println!("[COMMITTED] issues: {}", formatted_issues);
 }
 
