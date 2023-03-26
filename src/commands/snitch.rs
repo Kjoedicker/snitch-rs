@@ -19,7 +19,8 @@ fn parse_context_from_line(line: &str) -> (String, String) {
     (prefix, description)
 }
 
-fn process_file(file: String) -> (String, Vec<String>) {
+#[tokio::main]
+async fn process_file(file: String) -> (String, Vec<String>) {
     let mut issues = Vec::new();
 
     let mut source_file: Vec<String> = file
@@ -36,7 +37,7 @@ fn process_file(file: String) -> (String, Vec<String>) {
                 description
             ) = parse_context_from_line(line);
 
-            let issue = create_issue(&description, None);
+            let issue = create_issue(&description, None).await;
 
             source_file[line_number] = format!("{}(#{}):{} - {}", prefix, &issue.number, description, &issue.html_url);
     
