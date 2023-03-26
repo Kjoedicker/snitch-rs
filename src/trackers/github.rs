@@ -58,7 +58,6 @@ pub async fn fetch_issues(url: Option<String>) -> Vec<Issue> {
     issues
 }
 
-#[tokio::main]
 pub async fn create_issue(title: &str, url: Option<String>) -> Issue {
     let client = Client::new();
 
@@ -80,6 +79,7 @@ pub async fn create_issue(title: &str, url: Option<String>) -> Issue {
 
     match response.status() {
         StatusCode::CREATED => {},
+        StatusCode::OK => {},
         status_code => panic!("Received error reaching out to github API: {:?}", status_code)
     };
 
