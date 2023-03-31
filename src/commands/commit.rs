@@ -2,6 +2,12 @@ use core::panic;
 use std::{
     process::{ Command },
 };
+use std::sync::{ Arc, Mutex };
+use lazy_static::lazy_static;
+
+lazy_static! {
+    pub static ref COMMIT_ACTION: Arc<Mutex<bool>> =  Arc::new(Mutex::new(true));
+}
 
 pub fn format_issues(issues: Vec<String>) -> String {
 
@@ -74,6 +80,10 @@ fn commit_staged(filepath: &str, commit_message: String){
  }
 
 pub fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
+    // This stops a race condition when `commit_reported_issues` 
+    // is called at the same time across threads 
+    let power_to_commit = Arc::clone(&COMMIT_ACTION);
+    let _lock_power_to_commit = power_to_commit.lock().unwrap();
 
     let formatted_issues = format_issues(issues);
     let commit_message= format_commit_message(&formatted_issues);
