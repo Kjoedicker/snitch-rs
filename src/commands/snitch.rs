@@ -45,30 +45,32 @@ async fn find_and_track_issues(file: String) -> (String, Vec<String>) {
     (source_file.join("\n"), issues)
 }
 
-fn queue_files_for_processing(filepaths: Vec<String>) {
+fn process_file(filepath: String) {
+    let file = read_to_string(&filepath).unwrap();
+
+    let (
+        source_file, 
+        issues
+     ) = find_and_track_issues(file);
+
+    if issues.is_empty() { return };
+
+    write(&filepath, source_file).unwrap();
+
+    commit::commit_reported_issues(&filepath, issues);
+}
+
+fn thread_files_for_processing(filepaths: Vec<String>) {
 
     let pool = ThreadPool::new(CONFIG.total_threads);
 
     for filepath in filepaths {
 
-        let thread_file_processing = move || {
-
-            let file = read_to_string(&filepath).unwrap();
-
-            let (
-                source_file, 
-                issues
-             ) = find_and_track_issues(file);
-
-            if issues.is_empty() { return };
-
-            write(&filepath, source_file).unwrap();
-
-
-            commit::commit_reported_issues(&filepath, issues);
+        let file_processing_thread = move || {
+            process_file(filepath);
         };
     
-        pool.execute(thread_file_processing)
+        pool.execute(file_processing_thread)
     }
 
     println!(
@@ -83,7 +85,7 @@ fn queue_files_for_processing(filepaths: Vec<String>) {
 pub fn snitch() {
     let filepaths = find_project_filepaths();
 
-    queue_files_for_processing(filepaths);
+    thread_files_for_processing(filepaths);
 }
 
 #[cfg(test)]
