@@ -4,10 +4,7 @@ use crate::{
     trackers::github::{ create_issue },
     commands::commit
 };
-use std::{
-    fs::{ write, read_to_string },
-    sync::{ Arc, Mutex }
-};
+use std::fs::{ write, read_to_string };
 use threadpool::ThreadPool;
 
 fn parse_context_from_line(line: &str) -> (String, String) {
@@ -20,7 +17,7 @@ fn parse_context_from_line(line: &str) -> (String, String) {
 }
 
 #[tokio::main]
-async fn process_file(file: String) -> (String, Vec<String>) {
+async fn find_and_track_issues(file: String) -> (String, Vec<String>) {
     let mut issues = Vec::new();
 
     let mut source_file: Vec<String> = file
@@ -51,10 +48,8 @@ async fn process_file(file: String) -> (String, Vec<String>) {
 fn queue_files_for_processing(filepaths: Vec<String>) {
 
     let pool = ThreadPool::new(CONFIG.total_threads);
-    let commit_action =  Arc::new(Mutex::new(true));
 
     for filepath in filepaths {
-        let power_to_commit = Arc::clone(&commit_action);
 
         let thread_file_processing = move || {
 
@@ -63,15 +58,12 @@ fn queue_files_for_processing(filepaths: Vec<String>) {
             let (
                 source_file, 
                 issues
-             ) = process_file(file);
+             ) = find_and_track_issues(file);
 
             if issues.is_empty() { return };
 
             write(&filepath, source_file).unwrap();
 
-            // This stops a race condition when `commit_reported_issues` 
-            // is called at the same time across threads 
-            let _lock_power_to_commit = power_to_commit.lock().unwrap();
 
             commit::commit_reported_issues(&filepath, issues);
         };
@@ -108,19 +100,19 @@ mod tests {
             let (prefix, description) = parse_context_from_line(issue_line);
             
             let expectation = true;
-            let reality = format!("{}:{}", prefix, description) == issue_line;
+            let reality = format!("{}: {}", prefix, description) == issue_line;
             
             assert_eq!(expectation, reality, "The prefix and description rebuilt, should match the original line");
         }
     }
 
-    mod process_file {
+    mod find_and_track_issues {
         use super::*;
 
         #[test]
         fn matches_and_updates_issue_lines() {
             let file = String::from("line 1\nline 2\nTODO: example todo\nline 4\nTODO: final example todo");
-            let (updated_file, new_issues) = process_file(file.clone());
+            let (updated_file, new_issues) = find_and_track_issues(file.clone());
 
             let reality= true;
             let expectation_1 = file.len() < updated_file.len();
@@ -133,7 +125,7 @@ mod tests {
         #[test]
         fn handles_empty_files_gracefully() {
             let file = String::from("");
-            let (updated_file, new_issues) = process_file(file.clone());
+            let (updated_file, new_issues) = find_and_track_issues(file.clone());
 
             let reality= true;
             let expectation_1 = file.len() == updated_file.len();
