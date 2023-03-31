@@ -7,8 +7,6 @@ use reqwest::header::{USER_AGENT, AUTHORIZATION};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-const GITHUB_URL: &str = "https://api.github.com";
-
 #[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct Issue {
     pub html_url: String,
@@ -16,18 +14,18 @@ pub struct Issue {
     pub number: u32,
 }
 
-fn build_request_url(base_url: String) -> String {
-    format!("{base_url}/repos/{}/{}/issues", CONFIG.owner, CONFIG.repo)
+fn build_request_url() -> String {
+    format!("{}/repos/{}/{}/issues", CONFIG.base_tracker_url, CONFIG.owner, CONFIG.repo)
 }
 
-pub async fn fetch_issues(url: Option<String>) -> Vec<Issue> {
+pub async fn fetch_issues() -> Vec<Issue> {
     let client = Client::new();
     
     let query_string = build_query_string(vec![
         ("per_page", &CONFIG.issues_per_request)
     ]);
 
-    let request_url = format!("{}?{}", build_request_url(url.unwrap_or(GITHUB_URL.to_string())), query_string);
+    let request_url = format!("{}?{}", build_request_url(), query_string);
 
     let response = client
         .get(request_url)
@@ -58,10 +56,10 @@ pub async fn fetch_issues(url: Option<String>) -> Vec<Issue> {
     issues
 }
 
-pub async fn create_issue(title: &str, url: Option<String>) -> Issue {
+pub async fn create_issue(title: &str) -> Issue {
     let client = Client::new();
 
-    let request_url = build_request_url(url.unwrap_or(GITHUB_URL.to_string()));
+    let request_url = build_request_url();
 
     let request_body = json!({
         "title": title,
