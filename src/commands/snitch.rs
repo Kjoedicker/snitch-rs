@@ -11,7 +11,7 @@ use std::{
 use threadpool::ThreadPool;
 
 fn parse_context_from_line(line: &str) -> (String, String) {
-    let lines: Vec<&str> = line.split(':').collect();
+    let lines: Vec<&str> = line.split(": ").collect();
 
     let prefix = String::from(lines[0]);
     let description = String::from(lines[1]);
