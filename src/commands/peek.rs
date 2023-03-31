@@ -23,7 +23,7 @@ fn create_table_from_issues(issues: Vec<Issue>) -> Table {
 }
 
 pub async fn peek() {
-    let issues = fetch_issues(None).await;
+    let issues = fetch_issues().await;
     let issue_table = create_table_from_issues(issues);
     println!("{issue_table}");
 }

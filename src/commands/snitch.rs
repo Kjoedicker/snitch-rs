@@ -34,7 +34,7 @@ async fn find_and_track_issues(file: String) -> (String, Vec<String>) {
                 description
             ) = parse_context_from_line(line);
 
-            let issue = create_issue(&description, None).await;
+            let issue = create_issue(&description).await;
 
             source_file[line_number] = format!("{}(#{}):{} - {}", prefix, &issue.number, description, &issue.html_url);
     
