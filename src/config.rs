@@ -8,16 +8,15 @@ use toml::value::Table;
 pub struct Config {
     #[derivative(Default(value = "10"))]
     pub total_threads: usize,
-
     #[derivative(Default(value = "String::from(\"TODO\")"))]
     pub prefix: String,
+    #[derivative(Default(value = "String::from(\"10\")"))]
+    pub issues_per_request: String,
 
     pub owner: String,
     pub repo: String,
     pub token: String,
-
-    #[derivative(Default(value = "String::from(\"10\")"))]
-    pub issues_per_request: String,
+    pub base_tracker_url: String
 }
 
 fn load_config(config_path: &str) -> Option<Table> {
@@ -53,6 +52,7 @@ fn parse_config(config_toml: Table) -> Config {
             "repo" => base_config.repo = stringified_value,
             "token" => base_config.token = stringified_value,
             "issues_per_request" => base_config.issues_per_request = stringified_value,
+            "base_tracker_url" => base_config.base_tracker_url = stringified_value,
             _ => { println!("Couldn't parse: {:?}", key) }
         }
     }
