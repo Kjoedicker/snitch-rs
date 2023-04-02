@@ -1,17 +1,18 @@
 use crate::{ 
     dir::find_project_filepaths, 
     statics::*,
-    trackers::github::{ create_issue },
-    commands::commit
+    commands::commit, 
+    trackers::{
+        tracker::IssueTracker, 
+        github::{init_instance}
+    }, 
+    config::{Config, self}
 };
-use std::{
-    fs::{ write, read_to_string },
-    sync::{ Arc, Mutex }
-};
+use std::fs::{ write, read_to_string };
 use threadpool::ThreadPool;
 
 fn parse_context_from_line(line: &str) -> (String, String) {
-    let lines: Vec<&str> = line.split(':').collect();
+    let lines: Vec<&str> = line.split(": ").collect();
 
     let prefix = String::from(lines[0]);
     let description = String::from(lines[1]);
@@ -20,13 +21,15 @@ fn parse_context_from_line(line: &str) -> (String, String) {
 }
 
 #[tokio::main]
-async fn process_file(file: String) -> (String, Vec<String>) {
+async fn find_and_track_issues(config: Config, file: String) -> (String, Vec<String>) {
     let mut issues = Vec::new();
 
     let mut source_file: Vec<String> = file
         .split('\n')
         .map(String::from)
         .collect();
+
+    let issue_tracker = init_instance(config);
 
     for (line_number, line) in source_file.clone().iter().enumerate() {
     
@@ -37,7 +40,7 @@ async fn process_file(file: String) -> (String, Vec<String>) {
                 description
             ) = parse_context_from_line(line);
 
-            let issue = create_issue(&description, None).await;
+            let issue = issue_tracker.create_issue(&description).await;
 
             source_file[line_number] = format!("{}(#{}):{} - {}", prefix, &issue.number, description, &issue.html_url);
     
@@ -48,35 +51,32 @@ async fn process_file(file: String) -> (String, Vec<String>) {
     (source_file.join("\n"), issues)
 }
 
-fn queue_files_for_processing(filepaths: Vec<String>) {
+fn process_file(config: Config, filepath: String) {
+    let file = read_to_string(&filepath).unwrap();
 
-    let pool = ThreadPool::new(CONFIG.total_threads);
-    let commit_action =  Arc::new(Mutex::new(true));
+    let (
+        source_file, 
+        issues
+     ) = find_and_track_issues(config, file);
+
+    if issues.is_empty() { return };
+
+    write(&filepath, source_file).unwrap();
+
+    commit::commit_reported_issues(&filepath, issues);
+}
+
+fn thread_files_for_processing(config: Config, filepaths: Vec<String>) {
+    let pool = ThreadPool::new(CONFIG.total_threads.parse::<usize>().unwrap());
 
     for filepath in filepaths {
-        let power_to_commit = Arc::clone(&commit_action);
+        let config = config.clone();
 
-        let thread_file_processing = move || {
-
-            let file = read_to_string(&filepath).unwrap();
-
-            let (
-                source_file, 
-                issues
-             ) = process_file(file);
-
-            if issues.is_empty() { return };
-
-            write(&filepath, source_file).unwrap();
-
-            // This stops a race condition when `commit_reported_issues` 
-            // is called at the same time across threads 
-            let _lock_power_to_commit = power_to_commit.lock().unwrap();
-
-            commit::commit_reported_issues(&filepath, issues);
+        let file_processing_thread = move || {
+            process_file(config.clone(), filepath);
         };
     
-        pool.execute(thread_file_processing)
+        pool.execute(file_processing_thread)
     }
 
     println!(
@@ -91,7 +91,9 @@ fn queue_files_for_processing(filepaths: Vec<String>) {
 pub fn snitch() {
     let filepaths = find_project_filepaths();
 
-    queue_files_for_processing(filepaths);
+    let config = config::init();
+
+    thread_files_for_processing(config, filepaths);
 }
 
 #[cfg(test)]
@@ -108,19 +110,23 @@ mod tests {
             let (prefix, description) = parse_context_from_line(issue_line);
             
             let expectation = true;
-            let reality = format!("{}:{}", prefix, description) == issue_line;
+            let reality = format!("{}: {}", prefix, description) == issue_line;
             
             assert_eq!(expectation, reality, "The prefix and description rebuilt, should match the original line");
         }
     }
 
-    mod process_file {
+    mod find_and_track_issues {
+        use crate::config::init;
+
         use super::*;
 
         #[test]
         fn matches_and_updates_issue_lines() {
             let file = String::from("line 1\nline 2\nTODO: example todo\nline 4\nTODO: final example todo");
-            let (updated_file, new_issues) = process_file(file.clone());
+            let config = init();
+
+            let (updated_file, new_issues) = find_and_track_issues(config, file.clone());
 
             let reality= true;
             let expectation_1 = file.len() < updated_file.len();
@@ -133,7 +139,9 @@ mod tests {
         #[test]
         fn handles_empty_files_gracefully() {
             let file = String::from("");
-            let (updated_file, new_issues) = process_file(file.clone());
+            let config = init();
+    
+            let (updated_file, new_issues) = find_and_track_issues(config, file.clone());
 
             let reality= true;
             let expectation_1 = file.len() == updated_file.len();

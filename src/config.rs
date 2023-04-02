@@ -1,23 +1,22 @@
 use derivative::Derivative;
-use serde::{ Deserialize };
+use serde::{ Deserialize, Serialize };
 use std::{ fs::File, io::Read };
 use toml::value::Table;
 
-#[derive(Derivative, Deserialize, Clone)]
+#[derive(Derivative, Deserialize, Clone, Serialize)]
 #[derivative(Debug, Default)]
 pub struct Config {
-    #[derivative(Default(value = "10"))]
-    pub total_threads: usize,
-
+    #[derivative(Default(value = "String::from(\"10\")"))]
+    pub total_threads: String,
     #[derivative(Default(value = "String::from(\"TODO\")"))]
     pub prefix: String,
+    #[derivative(Default(value = "String::from(\"10\")"))]
+    pub issues_per_request: String,
 
     pub owner: String,
     pub repo: String,
     pub token: String,
-
-    #[derivative(Default(value = "String::from(\"10\")"))]
-    pub issues_per_request: String,
+    pub base_tracker_url: String
 }
 
 fn load_config(config_path: &str) -> Option<Table> {
@@ -47,12 +46,13 @@ fn parse_config(config_toml: Table) -> Config {
         let stringified_value = String::from(value.as_str().unwrap());
 
         match key.as_str() {
-            "total_threads" => base_config.total_threads = stringified_value.parse::<usize>().unwrap(),
+            "total_threads" => base_config.total_threads = stringified_value,
             "prefix" => base_config.prefix = stringified_value,
             "owner" => base_config.owner = stringified_value,
             "repo" => base_config.repo = stringified_value,
             "token" => base_config.token = stringified_value,
             "issues_per_request" => base_config.issues_per_request = stringified_value,
+            "base_tracker_url" => base_config.base_tracker_url = stringified_value,
             _ => { println!("Couldn't parse: {:?}", key) }
         }
     }
@@ -101,7 +101,7 @@ mod tests {
                 (parsed_config.repo.is_empty(), false, "repo"),
                 (parsed_config.token.is_empty(), false, "token"),
                 (parsed_config.prefix.is_empty(), false, "prefix"),
-                ((parsed_config.total_threads == 0), false, "total_threads"),
+                ((parsed_config.total_threads == "0".to_string()), false, "total_threads"),
             ];
 
             for (reality, expectation, desc) in expected_conditions {

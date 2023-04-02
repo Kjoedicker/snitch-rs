@@ -1,5 +1,9 @@
 use crate::{
-    trackers::github::{ Issue, fetch_issues }
+    config::{init},
+    trackers::{
+        tracker::{Issue, IssueTracker}, 
+        github::{init_instance}
+    }
 };
 use comfy_table::Table;
 
@@ -23,7 +27,10 @@ fn create_table_from_issues(issues: Vec<Issue>) -> Table {
 }
 
 pub async fn peek() {
-    let issues = fetch_issues(None).await;
+    let config = init();
+    let issue_tracker = init_instance(config);
+
+    let issues = issue_tracker.fetch_issues().await;
     let issue_table = create_table_from_issues(issues);
     println!("{issue_table}");
 }
@@ -31,9 +38,8 @@ pub async fn peek() {
 #[cfg(test)]
 mod tests{
     use super::*;
-    use crate::trackers::github;
 
-    fn setup() -> Vec<github::Issue> {
+    fn setup() -> Vec<Issue> {
         let example_issue_a = Issue {
             number: 1,
             html_url: "exampleurla.nowhere.io".to_string(),
