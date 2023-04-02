@@ -67,7 +67,7 @@ fn process_file(config: Config, filepath: String) {
 }
 
 fn thread_files_for_processing(config: Config, filepaths: Vec<String>) {
-    let pool = ThreadPool::new(CONFIG.total_threads.parse::<usize>().unwrap());
+    let pool = ThreadPool::new(config.total_threads.parse::<usize>().unwrap());
 
     for filepath in filepaths {
         let config = config.clone();

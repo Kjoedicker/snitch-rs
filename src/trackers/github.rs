@@ -1,8 +1,7 @@
 use super::tracker::{IssueTracker, Issue};
 use crate::config::Config;
 use crate::{ 
-    helpers::*,
-    statics::*
+    helpers::*
 }; 
 use async_trait::async_trait;
 use reqwest::{Client, StatusCode };
@@ -84,7 +83,7 @@ impl IssueTracker for Github {
         let response = client
             .post(request_url)
             .header(USER_AGENT, "SnitchRs")
-            .header(AUTHORIZATION, &CONFIG.token)
+            .header(AUTHORIZATION, &self.token)
             .json(&request_body)
             .send()
             .await
@@ -108,11 +107,19 @@ impl IssueTracker for Github {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use crate::config::init;
+    use lazy_static::lazy_static;
     use serde_json::Value;
     use wiremock::{MockServer, Mock, ResponseTemplate};
     use wiremock::matchers::{method, path};
 
-    fn build_instance(base_tracker_url: String) -> Github {
+    lazy_static!{
+        #[derive(Debug)]
+        pub static ref CONFIG: Config = init();
+    }
+
+    pub fn build_instance(base_tracker_url: String) -> Github {
         Github { 
             base_tracker_url: base_tracker_url, 
 
@@ -124,7 +131,7 @@ mod tests {
         }
     }
 
-    async fn build_mock_server(method_type: &str, status: StatusCode, json_body: Option<Value>) -> (MockServer, String) {
+    pub async fn build_mock_server(method_type: &str, status: StatusCode, json_body: Option<Value>) -> (MockServer, String) {
         let mock_server = MockServer::start().await;
 
         let url_path = format!("/repos/{}/{}/issues", CONFIG.owner, CONFIG.repo);
