@@ -1,8 +1,12 @@
 use crate::{ 
     dir::find_project_filepaths, 
     statics::*,
-    trackers::github::{ create_issue },
-    commands::commit
+    commands::commit, 
+    trackers::{
+        tracker::IssueTracker, 
+        github::{init_instance}
+    }, 
+    config::{Config, self}
 };
 use std::fs::{ write, read_to_string };
 use threadpool::ThreadPool;
@@ -17,13 +21,15 @@ fn parse_context_from_line(line: &str) -> (String, String) {
 }
 
 #[tokio::main]
-async fn find_and_track_issues(file: String) -> (String, Vec<String>) {
+async fn find_and_track_issues(config: Config, file: String) -> (String, Vec<String>) {
     let mut issues = Vec::new();
 
     let mut source_file: Vec<String> = file
         .split('\n')
         .map(String::from)
         .collect();
+
+    let issue_tracker = init_instance(config);
 
     for (line_number, line) in source_file.clone().iter().enumerate() {
     
@@ -34,7 +40,7 @@ async fn find_and_track_issues(file: String) -> (String, Vec<String>) {
                 description
             ) = parse_context_from_line(line);
 
-            let issue = create_issue(&description).await;
+            let issue = issue_tracker.create_issue(&description).await;
 
             source_file[line_number] = format!("{}(#{}):{} - {}", prefix, &issue.number, description, &issue.html_url);
     
@@ -45,13 +51,13 @@ async fn find_and_track_issues(file: String) -> (String, Vec<String>) {
     (source_file.join("\n"), issues)
 }
 
-fn process_file(filepath: String) {
+fn process_file(config: Config, filepath: String) {
     let file = read_to_string(&filepath).unwrap();
 
     let (
         source_file, 
         issues
-     ) = find_and_track_issues(file);
+     ) = find_and_track_issues(config, file);
 
     if issues.is_empty() { return };
 
@@ -60,14 +66,14 @@ fn process_file(filepath: String) {
     commit::commit_reported_issues(&filepath, issues);
 }
 
-fn thread_files_for_processing(filepaths: Vec<String>) {
-
-    let pool = ThreadPool::new(CONFIG.total_threads);
+fn thread_files_for_processing(config: Config, filepaths: Vec<String>) {
+    let pool = ThreadPool::new(CONFIG.total_threads.parse::<usize>().unwrap());
 
     for filepath in filepaths {
+        let config = config.clone();
 
         let file_processing_thread = move || {
-            process_file(filepath);
+            process_file(config.clone(), filepath);
         };
     
         pool.execute(file_processing_thread)
@@ -85,7 +91,9 @@ fn thread_files_for_processing(filepaths: Vec<String>) {
 pub fn snitch() {
     let filepaths = find_project_filepaths();
 
-    thread_files_for_processing(filepaths);
+    let config = config::init();
+
+    thread_files_for_processing(config, filepaths);
 }
 
 #[cfg(test)]
@@ -109,12 +117,16 @@ mod tests {
     }
 
     mod find_and_track_issues {
+        use crate::config::init;
+
         use super::*;
 
         #[test]
         fn matches_and_updates_issue_lines() {
             let file = String::from("line 1\nline 2\nTODO: example todo\nline 4\nTODO: final example todo");
-            let (updated_file, new_issues) = find_and_track_issues(file.clone());
+            let config = init();
+
+            let (updated_file, new_issues) = find_and_track_issues(config, file.clone());
 
             let reality= true;
             let expectation_1 = file.len() < updated_file.len();
@@ -127,7 +139,9 @@ mod tests {
         #[test]
         fn handles_empty_files_gracefully() {
             let file = String::from("");
-            let (updated_file, new_issues) = find_and_track_issues(file.clone());
+            let config = init();
+    
+            let (updated_file, new_issues) = find_and_track_issues(config, file.clone());
 
             let reality= true;
             let expectation_1 = file.len() == updated_file.len();
