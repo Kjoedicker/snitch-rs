@@ -32,6 +32,7 @@ pub async fn peek() {
 
     let issues = issue_tracker.fetch_issues().await;
     let issue_table = create_table_from_issues(issues);
+
     println!("{issue_table}");
 }
 
