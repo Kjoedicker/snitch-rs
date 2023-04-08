@@ -23,9 +23,9 @@ pub fn format_commit_message(issues: &String) -> String {
 
     let base_message = format!(
         "Adding {}", 
-        match issues.len() > 1 {
-            true => "issues: ",
-            _ => "issue: "
+        match issues.is_empty() {
+            true => "issue: ",
+            _ => "issues: "
         }
     );
 
