@@ -31,7 +31,7 @@ async fn find_and_track_issues(config: Config, file: String) -> (String, Vec<Str
 
     let issue_tracker = init_instance(config);
 
-    for (line_number, line) in source_file.clone().iter().enumerate() {
+    for line in source_file.iter_mut() {
     
         if UNTAGGED_ISSUE_PATTERN.is_match(line) {
 
@@ -42,7 +42,7 @@ async fn find_and_track_issues(config: Config, file: String) -> (String, Vec<Str
 
             let issue = issue_tracker.create_issue(&description).await;
 
-            source_file[line_number] = format!("{}(#{}):{} - {}", prefix, &issue.number, description, &issue.html_url);
+            *line = format!("{}(#{}):{} - {}", prefix, &issue.number, description, &issue.html_url);
     
             issues.push(format!("{}", issue.number));
         }
