@@ -1,8 +1,7 @@
 use super::tracker::{IssueTracker, Issue};
 use crate::config::Config;
 use crate::{ 
-    helpers::*,
-    statics::*
+    helpers::*
 }; 
 use async_trait::async_trait;
 use reqwest::{Client, StatusCode };
@@ -84,7 +83,7 @@ impl IssueTracker for Github {
         let response = client
             .post(request_url)
             .header(USER_AGENT, "SnitchRs")
-            .header(AUTHORIZATION, &CONFIG.token)
+            .header(AUTHORIZATION, &self.token)
             .json(&request_body)
             .send()
             .await
@@ -98,6 +97,40 @@ impl IssueTracker for Github {
 
         let issue: Issue = match response.json().await {
             Ok(issue) => issue,
+            Err(  err) => panic!("Problem marshaling response data into issue type, {:?}", err)
+        };
+
+        issue
+    }
+
+    async fn fetch_issue(&self, issue_number: &str) -> Issue {
+        let client = Client::new();
+
+        let request_url = format!("{}/{}", self.build_request_url(), issue_number);
+
+        let response = client
+            .get(request_url)
+            .header(USER_AGENT, "SnitchRs")
+            .header(AUTHORIZATION, &self.token)
+            .send()
+            .await
+            .unwrap();
+
+        match response.status() {
+            StatusCode::OK => {},
+            StatusCode::NOT_FOUND => {
+                panic!("Repo not found, check configuration");
+            },
+            StatusCode::UNAUTHORIZED => {
+                panic!("Request unauthorized, check access token");
+            }
+            status_code => {
+                panic!("Received error reaching out to github API: {:?}", status_code);
+            }
+        }
+
+        let issue: Issue = match response.json().await {
+            Ok(issue) => issue,
             Err(err) => panic!("Problem marshaling response data into issue type, {:?}", err)
         };
 
@@ -108,11 +141,19 @@ impl IssueTracker for Github {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use crate::config::init;
+    use lazy_static::lazy_static;
     use serde_json::Value;
     use wiremock::{MockServer, Mock, ResponseTemplate};
     use wiremock::matchers::{method, path};
 
-    fn build_instance(base_tracker_url: String) -> Github {
+    lazy_static!{
+        #[derive(Debug)]
+        pub static ref CONFIG: Config = init();
+    }
+
+    pub fn build_instance(base_tracker_url: String) -> Github {
         Github { 
             base_tracker_url: base_tracker_url, 
 
@@ -124,7 +165,7 @@ mod tests {
         }
     }
 
-    async fn build_mock_server(method_type: &str, status: StatusCode, json_body: Option<Value>) -> (MockServer, String) {
+    pub async fn build_mock_server(method_type: &str, status: StatusCode, json_body: Option<Value>) -> (MockServer, String) {
         let mock_server = MockServer::start().await;
 
         let url_path = format!("/repos/{}/{}/issues", CONFIG.owner, CONFIG.repo);
@@ -198,11 +239,13 @@ mod tests {
                 "html_url": "https://github.com/Kjoedicker/snitch-lab/issues/650",
                 "number": 650,
                 "title": " some thing",
+                "state": "open"
               },
               {
                 "html_url": "https://github.com/Kjoedicker/snitch-lab/issues/650",
                 "number": 650,
                 "title": " some thing",
+                "state": "open"
               },
             ]);
     
@@ -249,6 +292,7 @@ mod tests {
                 "html_url": "https://github.com/Kjoedicker/snitch-lab/issues/650",
                 "number": 650,
                 "title": " some thing",
+                "state": "open"
               }
             );
     
@@ -280,6 +324,19 @@ mod tests {
             let github_tracker = build_instance(server_uri);
 
             let _ = github_tracker.create_issue("test-title").await;
+        }
+    }
+
+    mod fetch_issue {
+        use crate::{config, trackers::{github::init_instance, tracker::IssueTracker}};
+
+        #[tokio::test]
+        async fn should_fetch_issue() {
+            let config = config::init();
+            
+            let github_tracker = init_instance(config);
+
+            let _ = github_tracker.fetch_issue("1").await;
         }
     }
 }
