@@ -19,10 +19,11 @@ pub fn format_issues(issues: Vec<String>) -> String {
     concated_issues
 }
 
-pub fn format_commit_message(issues: &String) -> String {
+pub fn format_commit_message(commit_type: &str, issues: &String) -> String {
 
     let base_message = format!(
-        "Adding {}", 
+        "{} {}", 
+        commit_type,
         match issues.is_empty() {
             true => "issue: ",
             _ => "issues: "
@@ -79,19 +80,19 @@ fn commit_staged(filepath: &str, commit_message: String){
     }
  }
 
-pub fn commit_reported_issues(filepath: &str, issues: Vec<String>) {
+pub fn commit_issues(commit_type: &str, filepath: &str, issues: Vec<String>) {
     // This stops a race condition when `commit_reported_issues` 
     // is called at the same time across threads 
     let power_to_commit = Arc::clone(&COMMIT_ACTION);
     let _lock_power_to_commit = power_to_commit.lock().unwrap();
 
     let formatted_issues = format_issues(issues);
-    let commit_message= format_commit_message(&formatted_issues);
+    let commit_message= format_commit_message(commit_type, &formatted_issues);
     
     stage_file(filepath);
     commit_staged(filepath, commit_message);
     
-    println!("[COMMITTED] issues: {}", formatted_issues);
+    println!("[{}] issues: {}", commit_type.to_ascii_uppercase(), formatted_issues);
 }
 
 #[cfg(test)]
@@ -132,15 +133,29 @@ mod tests {
         use super::*;
     
         #[test]
-        fn formats_a_commit_message() {
+        fn formats_a_adding_commit_message() {
             let test_issues = setup();
 
             let formatted_issues = format_issues(test_issues);
 
-            let commit_message = format_commit_message(&formatted_issues);
+            let commit_message = format_commit_message("Adding", &formatted_issues);
 
             let expectation = true;
             let reality = commit_message == "Adding issues: #1, #2, #3";
+
+            assert_eq!(expectation, reality);
+        }
+        #[test]
+
+        fn formats_a_removing_commit_message() {
+            let test_issues = setup();
+
+            let formatted_issues = format_issues(test_issues);
+
+            let commit_message = format_commit_message("Removing", &formatted_issues);
+
+            let expectation = true;
+            let reality = commit_message == "Removing issues: #1, #2, #3";
 
             assert_eq!(expectation, reality);
         }
