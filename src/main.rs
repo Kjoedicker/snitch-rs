@@ -25,6 +25,9 @@ async fn main() {
         Mode::Snitch => {
             snitch()
         }
+        Mode::Audit => {
+            audit()
+        }
     }
     
     let elapsed = now.elapsed();
