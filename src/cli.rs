@@ -6,6 +6,8 @@ pub enum Mode {
     Snitch,
     /// List existing issues
     Peek,
+    /// Audit and remove completed issues
+    Audit,
 }
 
 #[derive(Parser, Debug)]
