@@ -63,7 +63,7 @@ fn process_file(config: Config, filepath: String) {
 
     write(&filepath, source_file).unwrap();
 
-    commit::commit_reported_issues(&filepath, issues);
+    commit::commit_issues("Added", &filepath, issues);
 }
 
 fn thread_files_for_processing(config: Config, filepaths: Vec<String>) {
