@@ -97,6 +97,40 @@ impl IssueTracker for Github {
 
         let issue: Issue = match response.json().await {
             Ok(issue) => issue,
+            Err(  err) => panic!("Problem marshaling response data into issue type, {:?}", err)
+        };
+
+        issue
+    }
+
+    async fn fetch_issue(&self, issue_number: &str) -> Issue {
+        let client = Client::new();
+
+        let request_url = format!("{}/{}", self.build_request_url(), issue_number);
+
+        let response = client
+            .get(request_url)
+            .header(USER_AGENT, "SnitchRs")
+            .header(AUTHORIZATION, &self.token)
+            .send()
+            .await
+            .unwrap();
+
+        match response.status() {
+            StatusCode::OK => {},
+            StatusCode::NOT_FOUND => {
+                panic!("Repo not found, check configuration");
+            },
+            StatusCode::UNAUTHORIZED => {
+                panic!("Request unauthorized, check access token");
+            }
+            status_code => {
+                panic!("Received error reaching out to github API: {:?}", status_code);
+            }
+        }
+
+        let issue: Issue = match response.json().await {
+            Ok(issue) => issue,
             Err(err) => panic!("Problem marshaling response data into issue type, {:?}", err)
         };
 
@@ -205,11 +239,13 @@ mod tests {
                 "html_url": "https://github.com/Kjoedicker/snitch-lab/issues/650",
                 "number": 650,
                 "title": " some thing",
+                "state": "open"
               },
               {
                 "html_url": "https://github.com/Kjoedicker/snitch-lab/issues/650",
                 "number": 650,
                 "title": " some thing",
+                "state": "open"
               },
             ]);
     
@@ -256,6 +292,7 @@ mod tests {
                 "html_url": "https://github.com/Kjoedicker/snitch-lab/issues/650",
                 "number": 650,
                 "title": " some thing",
+                "state": "open"
               }
             );
     
@@ -287,6 +324,19 @@ mod tests {
             let github_tracker = build_instance(server_uri);
 
             let _ = github_tracker.create_issue("test-title").await;
+        }
+    }
+
+    mod fetch_issue {
+        use crate::{config, trackers::{github::init_instance, tracker::IssueTracker}};
+
+        #[tokio::test]
+        async fn should_fetch_issue() {
+            let config = config::init();
+            
+            let github_tracker = init_instance(config);
+
+            let _ = github_tracker.fetch_issue("1").await;
         }
     }
 }
