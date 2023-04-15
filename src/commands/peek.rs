@@ -45,16 +45,19 @@ mod tests{
             number: 1,
             html_url: "exampleurla.nowhere.io".to_string(),
             title: "Example Title A".to_string(),
+            state: "open".to_string(),
         };
         let example_issue_b = Issue {
             number: 2,
             html_url: "exampleurlb.nowhere.io".to_string(),
             title: "Example Title B".to_string(),
+            state: "open".to_string(),
         };
         let example_issue_c = Issue {
             number: 3,
             html_url: "exampleurlc.nowhere.io".to_string(),
             title: "Example Title C".to_string(),
+            state: "open".to_string(),
         };
 
         let issues = vec![
