@@ -1,6 +1,6 @@
 use derivative::Derivative;
-use serde::{ Deserialize, Serialize };
-use std::{ fs::File, io::Read };
+use serde::{Deserialize, Serialize};
+use std::{fs::File, io::Read};
 use toml::value::Table;
 
 #[derive(Derivative, Deserialize, Clone, Serialize)]
@@ -16,12 +16,12 @@ pub struct Config {
     pub owner: String,
     pub repo: String,
     pub token: String,
-    pub base_tracker_url: String
+    pub base_tracker_url: String,
 }
 
 fn load_config(config_path: &str) -> Option<Table> {
     let mut config_toml = String::new();
-    
+
     let mut file = match File::open(config_path) {
         Ok(file) => file,
         Err(error) => {
@@ -31,10 +31,10 @@ fn load_config(config_path: &str) -> Option<Table> {
     };
 
     file.read_to_string(&mut config_toml)
-            .unwrap_or_else(|err| panic!("Error while reading config: [{}]", err));
+        .unwrap_or_else(|err| panic!("Error while reading config: [{}]", err));
 
     let config_toml: Table = toml::from_str(&config_toml).unwrap();
-    
+
     Some(config_toml)
 }
 
@@ -53,7 +53,9 @@ fn parse_config(config_toml: Table) -> Config {
             "token" => base_config.token = stringified_value,
             "issues_per_request" => base_config.issues_per_request = stringified_value,
             "base_tracker_url" => base_config.base_tracker_url = stringified_value,
-            _ => { println!("Couldn't parse: {:?}", key) }
+            _ => {
+                println!("Couldn't parse: {:?}", key)
+            }
         }
     }
 
@@ -63,7 +65,7 @@ fn parse_config(config_toml: Table) -> Config {
 pub fn init() -> Config {
     match load_config("./snitch.toml") {
         Some(config_toml) => parse_config(config_toml),
-        None => Config::default()
+        None => Config::default(),
     }
 }
 
@@ -75,15 +77,22 @@ mod tests {
         use super::*;
 
         #[test]
-        fn handles_invalid_path () {
+        fn handles_invalid_path() {
             let config = load_config("1");
-            assert_eq!(config, None, "load_config should return `None` for invalid paths");
+            assert_eq!(
+                config, None,
+                "load_config should return `None` for invalid paths"
+            );
         }
 
         #[test]
-        fn handles_valid_path () {
+        fn handles_valid_path() {
             let config = load_config("./snitch.toml");
-            assert_eq!(config.is_some(), true, "load_config should return `Some` for valid paths");
+            assert_eq!(
+                config.is_some(),
+                true,
+                "load_config should return `Some` for valid paths"
+            );
         }
     }
 
@@ -91,7 +100,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn maps_config () {
+        fn maps_config() {
             let config = load_config("./snitch.toml").unwrap();
 
             let parsed_config = parse_config(config);
@@ -101,7 +110,11 @@ mod tests {
                 (parsed_config.repo.is_empty(), false, "repo"),
                 (parsed_config.token.is_empty(), false, "token"),
                 (parsed_config.prefix.is_empty(), false, "prefix"),
-                ((parsed_config.total_threads == "0".to_string()), false, "total_threads"),
+                (
+                    (parsed_config.total_threads == *"0"),
+                    false,
+                    "total_threads",
+                ),
             ];
 
             for (reality, expectation, desc) in expected_conditions {
@@ -110,4 +123,3 @@ mod tests {
         }
     }
 }
-

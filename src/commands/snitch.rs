@@ -1,14 +1,11 @@
-use crate::{ 
-    dir::find_project_filepaths, 
+use crate::{
+    commands::commit,
+    config::{self, Config},
+    dir::find_project_filepaths,
     statics::*,
-    commands::commit, 
-    trackers::{
-        tracker::IssueTracker, 
-        github::{init_instance}
-    }, 
-    config::{Config, self}
+    trackers::{github::init_instance, tracker::IssueTracker},
 };
-use std::fs::{ write, read_to_string };
+use std::fs::{read_to_string, write};
 use threadpool::ThreadPool;
 
 fn parse_context_from_line(line: &str) -> (String, String) {
@@ -16,7 +13,7 @@ fn parse_context_from_line(line: &str) -> (String, String) {
 
     let prefix = String::from(lines[0]);
     let description = String::from(lines[1]);
-    
+
     (prefix, description)
 }
 
@@ -24,26 +21,21 @@ fn parse_context_from_line(line: &str) -> (String, String) {
 async fn find_and_track_issues(config: Config, file: String) -> (String, Vec<String>) {
     let mut issues = Vec::new();
 
-    let mut source_file: Vec<String> = file
-        .split('\n')
-        .map(String::from)
-        .collect();
+    let mut source_file: Vec<String> = file.split('\n').map(String::from).collect();
 
     let issue_tracker = init_instance(config);
 
     for line in source_file.iter_mut() {
-    
         if UNTAGGED_ISSUE_PATTERN.is_match(line) {
-
-            let (
-                prefix,
-                description
-            ) = parse_context_from_line(line);
+            let (prefix, description) = parse_context_from_line(line);
 
             let issue = issue_tracker.create_issue(&description).await;
 
-            *line = format!("{}(#{}):{} - {}", prefix, &issue.number, description, &issue.html_url);
-    
+            *line = format!(
+                "{}(#{}):{} - {}",
+                prefix, &issue.number, description, &issue.html_url
+            );
+
             issues.push(format!("{}", issue.number));
         }
     }
@@ -54,12 +46,11 @@ async fn find_and_track_issues(config: Config, file: String) -> (String, Vec<Str
 fn process_file(config: Config, filepath: String) {
     let file = read_to_string(&filepath).unwrap();
 
-    let (
-        source_file, 
-        issues
-     ) = find_and_track_issues(config, file);
+    let (source_file, issues) = find_and_track_issues(config, file);
 
-    if issues.is_empty() { return };
+    if issues.is_empty() {
+        return;
+    };
 
     write(&filepath, source_file).unwrap();
 
@@ -75,13 +66,13 @@ fn thread_files_for_processing(config: Config, filepaths: Vec<String>) {
         let file_processing_thread = move || {
             process_file(config.clone(), filepath);
         };
-    
+
         pool.execute(file_processing_thread)
     }
 
     println!(
-        "Active count - {}\nQueued Count - {}", 
-        pool.active_count(), 
+        "Active count - {}\nQueued Count - {}",
+        pool.active_count(),
         pool.queued_count()
     );
 
@@ -106,13 +97,16 @@ mod tests {
         #[test]
         fn parses_prefix_and_description() {
             let issue_line = "TODO: figure out more convenient macros for testing";
-            
+
             let (prefix, description) = parse_context_from_line(issue_line);
-            
+
             let expectation = true;
             let reality = format!("{}: {}", prefix, description) == issue_line;
-            
-            assert_eq!(expectation, reality, "The prefix and description rebuilt, should match the original line");
+
+            assert_eq!(
+                expectation, reality,
+                "The prefix and description rebuilt, should match the original line"
+            );
         }
     }
 
@@ -123,12 +117,14 @@ mod tests {
 
         #[test]
         fn matches_and_updates_issue_lines() {
-            let file = String::from("line 1\nline 2\nTODO: example todo\nline 4\nTODO: final example todo");
+            let file = String::from(
+                "line 1\nline 2\nTODO: example todo\nline 4\nTODO: final example todo",
+            );
             let config = init();
 
             let (updated_file, new_issues) = find_and_track_issues(config, file.clone());
 
-            let reality= true;
+            let reality = true;
             let expectation_1 = file.len() < updated_file.len();
             assert_eq!(expectation_1, reality);
 
@@ -140,14 +136,17 @@ mod tests {
         fn handles_empty_files_gracefully() {
             let file = String::from("");
             let config = init();
-    
+
             let (updated_file, new_issues) = find_and_track_issues(config, file.clone());
 
-            let reality= true;
+            let reality = true;
             let expectation_1 = file.len() == updated_file.len();
-            assert_eq!(expectation_1, reality, "The updated file should be exactly the same");
+            assert_eq!(
+                expectation_1, reality,
+                "The updated file should be exactly the same"
+            );
 
-            let expectation_2 = new_issues.len() == 0;
+            let expectation_2 = new_issues.is_empty();
             assert_eq!(expectation_2, reality, "There should be 0 matched issues");
         }
     }
