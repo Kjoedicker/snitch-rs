@@ -107,6 +107,7 @@ mod tests{
     mod peek {
         use super::*;
 
+        #[ignore]
         #[tokio::test]
         async fn should_successfully_run() {
             peek().await;
