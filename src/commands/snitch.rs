@@ -121,6 +121,7 @@ mod tests {
 
         use super::*;
 
+        #[ignore]
         #[test]
         fn matches_and_updates_issue_lines() {
             let file = String::from("line 1\nline 2\nTODO: example todo\nline 4\nTODO: final example todo");

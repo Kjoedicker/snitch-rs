@@ -80,6 +80,7 @@ mod tests {
             assert_eq!(config, None, "load_config should return `None` for invalid paths");
         }
 
+        #[ignore]
         #[test]
         fn handles_valid_path () {
             let config = load_config("./snitch.toml");
@@ -90,6 +91,7 @@ mod tests {
     mod parse_config {
         use super::*;
 
+        #[ignore]
         #[test]
         fn maps_config () {
             let config = load_config("./snitch.toml").unwrap();

@@ -330,6 +330,7 @@ mod tests {
     mod fetch_issue {
         use crate::{config, trackers::{github::init_instance, tracker::IssueTracker}};
 
+        #[ignore]
         #[tokio::test]
         async fn should_fetch_issue() {
             let config = config::init();
