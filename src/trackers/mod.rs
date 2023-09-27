@@ -1,2 +1,2 @@
-pub mod tracker;
 pub mod github;
+pub mod tracker;
